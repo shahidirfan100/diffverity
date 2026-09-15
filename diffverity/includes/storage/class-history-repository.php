@@ -131,9 +131,12 @@ final class History_Repository {
 		global $wpdb;
 		$retention = max( 1, min( 100, (int) Plugin::settings()['history_retention'] ) );
 		$table     = Database::table( 'scans' );
-		$ids       = $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM %i ORDER BY id DESC LIMIT 100000 OFFSET %d', $table, $retention ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Retention pruning requires current owned row IDs.
-		foreach ( array_map( 'intval', $ids ) as $id ) {
-			$this->delete( $id );
-		}
+		do {
+			$ids      = $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM %i ORDER BY id DESC LIMIT 500 OFFSET %d', $table, $retention ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded retention query on an owned table.
+			$id_count = count( $ids );
+			foreach ( array_map( 'intval', $ids ) as $id ) {
+				$this->delete( $id );
+			}
+		} while ( 500 === $id_count );
 	}
 }

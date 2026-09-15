@@ -12,7 +12,6 @@ use DiffVerity\Diff\Diff_Engine;
 use DiffVerity\Export\Report_Exporter;
 use DiffVerity\Filesystem\Path_Guard;
 use DiffVerity\Plugin;
-use DiffVerity\Repair\File_Restorer;
 use DiffVerity\Scanner\Component_Registry;
 use DiffVerity\Scanner\Scan_Manager;
 use DiffVerity\Storage\Baseline_Repository;
@@ -45,7 +44,6 @@ final class Admin {
 		add_action( 'wp_ajax_diffverity_create_baseline', array( $this, 'ajax_create_baseline' ) );
 		add_action( 'wp_ajax_diffverity_delete_baseline', array( $this, 'ajax_delete_baseline' ) );
 		add_action( 'wp_ajax_diffverity_view_diff', array( $this, 'ajax_view_diff' ) );
-		add_action( 'wp_ajax_diffverity_restore_file', array( $this, 'ajax_restore_file' ) );
 		add_action( 'admin_post_diffverity_save_settings', array( $this, 'save_settings' ) );
 		add_action( 'admin_post_diffverity_export', array( $this, 'export' ) );
 		add_action( 'admin_post_diffverity_delete_history', array( $this, 'delete_history' ) );
@@ -55,13 +53,13 @@ final class Admin {
 	public function register_menu() {
 		$cap  = Capabilities::required();
 		$icon = 'dashicons-media-code';
-		add_menu_page( __( 'DiffVerity', 'diffverity' ), __( 'DiffVerity', 'diffverity' ), $cap, 'diffverity', array( $this, 'render_overview' ), $icon, 65 );
-		add_submenu_page( 'diffverity', __( 'Integrity Overview', 'diffverity' ), __( 'Overview', 'diffverity' ), $cap, 'diffverity', array( $this, 'render_overview' ) );
-		add_submenu_page( 'diffverity', __( 'Run Integrity Scan', 'diffverity' ), __( 'Scan', 'diffverity' ), $cap, 'diffverity-scan', array( $this, 'render_scan' ) );
-		add_submenu_page( 'diffverity', __( 'File Changes', 'diffverity' ), __( 'Changes', 'diffverity' ), $cap, 'diffverity-changes', array( $this, 'render_changes' ) );
-		add_submenu_page( 'diffverity', __( 'Local Baselines', 'diffverity' ), __( 'Baselines', 'diffverity' ), $cap, 'diffverity-baselines', array( $this, 'render_baselines' ) );
-		add_submenu_page( 'diffverity', __( 'Scan History', 'diffverity' ), __( 'History', 'diffverity' ), $cap, 'diffverity-history', array( $this, 'render_history' ) );
-		add_submenu_page( 'diffverity', __( 'DiffVerity Settings', 'diffverity' ), __( 'Settings', 'diffverity' ), $cap, 'diffverity-settings', array( $this, 'render_settings' ) );
+		add_menu_page( __( 'DiffVerity', 'diffverity-file-integrity-source-diff' ), __( 'DiffVerity', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity', array( $this, 'render_overview' ), $icon, 65 );
+		add_submenu_page( 'diffverity', __( 'Integrity Overview', 'diffverity-file-integrity-source-diff' ), __( 'Overview', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity', array( $this, 'render_overview' ) );
+		add_submenu_page( 'diffverity', __( 'Run Integrity Scan', 'diffverity-file-integrity-source-diff' ), __( 'Scan', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity-scan', array( $this, 'render_scan' ) );
+		add_submenu_page( 'diffverity', __( 'File Changes', 'diffverity-file-integrity-source-diff' ), __( 'Changes', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity-changes', array( $this, 'render_changes' ) );
+		add_submenu_page( 'diffverity', __( 'Local Baselines', 'diffverity-file-integrity-source-diff' ), __( 'Baselines', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity-baselines', array( $this, 'render_baselines' ) );
+		add_submenu_page( 'diffverity', __( 'Scan History', 'diffverity-file-integrity-source-diff' ), __( 'History', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity-history', array( $this, 'render_history' ) );
+		add_submenu_page( 'diffverity', __( 'DiffVerity Settings', 'diffverity-file-integrity-source-diff' ), __( 'Settings', 'diffverity-file-integrity-source-diff' ), $cap, 'diffverity-settings', array( $this, 'render_settings' ) );
 	}
 
 	/** Loads assets only on DiffVerity pages. */
@@ -79,14 +77,11 @@ final class Admin {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'diffverity_admin' ),
 				'labels'  => array(
-					'starting'        => __( 'Starting scan…', 'diffverity' ),
-					'complete'        => __( 'Scan complete. Reloading results…', 'diffverity' ),
-					'cancelled'       => __( 'Scan cancelled.', 'diffverity' ),
-					'confirmBaseline' => __( 'A local baseline records the current files but does not prove they are clean or authentic. Create it now?', 'diffverity' ),
-					'confirmDelete'   => __( 'Delete this baseline?', 'diffverity' ),
-					'confirmRestore'  => __( 'Restore this file from the exact installed-version package on WordPress.org? The current file will be overwritten and scan history will remain unchanged.', 'diffverity' ),
-					'restoring'       => __( 'Restoring…', 'diffverity' ),
-					'restored'        => __( 'Restored — rescan required', 'diffverity' ),
+					'starting'        => __( 'Starting scan…', 'diffverity-file-integrity-source-diff' ),
+					'complete'        => __( 'Scan complete. Reloading results…', 'diffverity-file-integrity-source-diff' ),
+					'cancelled'       => __( 'Scan cancelled.', 'diffverity-file-integrity-source-diff' ),
+					'confirmBaseline' => __( 'A local baseline records the current files but does not prove they are clean or authentic. Create it now?', 'diffverity-file-integrity-source-diff' ),
+					'confirmDelete'   => __( 'Delete this baseline?', 'diffverity-file-integrity-source-diff' ),
 				),
 			)
 		);
@@ -103,36 +98,46 @@ final class Admin {
 		foreach ( array( 'Modified', 'Missing', 'Unexpected', 'Baseline Changed', 'Baseline Missing', 'Baseline Added', 'Soft Difference' ) as $status ) {
 			$differences += isset( $counts[ $status ] ) ? (int) $counts[ $status ] : 0;
 		}
-		$this->header( __( 'Integrity Overview', 'diffverity' ), __( 'Evidence-based source comparison for core, plugins, and themes.', 'diffverity' ) );
+		$this->header( __( 'Integrity Overview', 'diffverity-file-integrity-source-diff' ), __( 'Evidence-based source comparison for core, plugins, and themes.', 'diffverity-file-integrity-source-diff' ) );
 		?>
 		<div class="diffverity-grid diffverity-grid--metrics">
-			<?php $this->metric( __( 'Verified files', 'diffverity' ), isset( $counts['Verified'] ) ? (int) $counts['Verified'] : 0, 'verified' ); ?>
-			<?php $this->metric( __( 'Differences to review', 'diffverity' ), $differences, $differences ? 'changed' : 'verified' ); ?>
-			<?php $this->metric( __( 'Source unavailable', 'diffverity' ), isset( $counts['Source Unavailable'] ) ? (int) $counts['Source Unavailable'] : 0, 'neutral' ); ?>
-			<?php $this->metric( __( 'Last scan', 'diffverity' ), $scan ? mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $scan['started_at'] ) : __( 'Never', 'diffverity' ), 'info' ); ?>
+			<?php $this->metric( __( 'Verified files', 'diffverity-file-integrity-source-diff' ), isset( $counts['Verified'] ) ? (int) $counts['Verified'] : 0, 'verified' ); ?>
+			<?php $this->metric( __( 'Differences to review', 'diffverity-file-integrity-source-diff' ), $differences, $differences ? 'changed' : 'verified' ); ?>
+			<?php $this->metric( __( 'Source unavailable', 'diffverity-file-integrity-source-diff' ), isset( $counts['Source Unavailable'] ) ? (int) $counts['Source Unavailable'] : 0, 'neutral' ); ?>
+			<?php $this->metric( __( 'Last scan', 'diffverity-file-integrity-source-diff' ), $scan ? mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $scan['started_at'] ) : __( 'Never', 'diffverity-file-integrity-source-diff' ), 'info' ); ?>
 		</div>
 		<?php if ( $components ) : ?>
 		<div class="diffverity-panel">
-			<h2><?php esc_html_e( 'Latest scan components', 'diffverity' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Select a component to open only its file results from the latest scan.', 'diffverity' ); ?></p>
-			<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity' ); ?></th><th><?php esc_html_e( 'Type', 'diffverity' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity' ); ?></th><th><?php esc_html_e( 'Scanned files', 'diffverity' ); ?></th><th><?php esc_html_e( 'Differences', 'diffverity' ); ?></th></tr></thead><tbody>
+			<h2><?php esc_html_e( 'Latest scan components', 'diffverity-file-integrity-source-diff' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Select a component to open only its file results from the latest scan.', 'diffverity-file-integrity-source-diff' ); ?></p>
+			<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Type', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Scanned files', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Differences', 'diffverity-file-integrity-source-diff' ); ?></th></tr></thead><tbody>
 			<?php foreach ( $components as $component ) : ?>
-				<?php $component_url = add_query_arg( array( 'page' => 'diffverity-changes', 'scan_id' => absint( $scan['id'] ), 'type' => $component['component_type'], 'component' => $component['component_slug'] ), admin_url( 'admin.php' ) ); ?>
+				<?php
+				$component_url = add_query_arg(
+					array(
+						'page'      => 'diffverity-changes',
+						'scan_id'   => absint( $scan['id'] ),
+						'type'      => $component['component_type'],
+						'component' => $component['component_slug'],
+					),
+					admin_url( 'admin.php' )
+				);
+				?>
 				<tr><td><strong><a href="<?php echo esc_url( $component_url ); ?>"><?php echo esc_html( $component['component_name'] ? $component['component_name'] : $component['component_slug'] ); ?></a></strong></td><td><?php echo esc_html( ucfirst( $component['component_type'] ) ); ?></td><td><?php echo esc_html( $component['component_version'] ); ?></td><td><?php echo esc_html( number_format_i18n( (int) $component['total_files'] ) ); ?></td><td><?php echo esc_html( number_format_i18n( (int) $component['differences'] ) ); ?></td></tr>
 			<?php endforeach; ?>
 			</tbody></table></div>
 		</div>
 		<?php endif; ?>
 		<div class="diffverity-panel">
-			<h2><?php esc_html_e( 'Trust labels are evidence labels', 'diffverity' ); ?></h2>
+			<h2><?php esc_html_e( 'Trust labels are evidence labels', 'diffverity-file-integrity-source-diff' ); ?></h2>
 			<div class="diffverity-trust-grid">
-				<?php $this->trust_item( 'Officially Verified', __( 'Compared with authoritative checksums for the exact installed version.', 'diffverity' ) ); ?>
-				<?php $this->trust_item( 'Official Source Available', __( 'Compared with an exact-version package retrieved from WordPress.org.', 'diffverity' ) ); ?>
-				<?php $this->trust_item( 'Official Core Bundle', __( 'Matches a recorded component copy from the current or a recent official WordPress distribution.', 'diffverity' ) ); ?>
-				<?php $this->trust_item( 'Local Baseline', __( 'Shows changes after an administrator-created snapshot; it does not prove authenticity.', 'diffverity' ) ); ?>
-				<?php $this->trust_item( 'No Trusted Source', __( 'No independent source was available. This is not itself a security warning.', 'diffverity' ) ); ?>
+				<?php $this->trust_item( 'Officially Verified', __( 'Compared with authoritative checksums for the exact installed version.', 'diffverity-file-integrity-source-diff' ) ); ?>
+				<?php $this->trust_item( 'Official Source Available', __( 'Compared with an exact-version package retrieved from WordPress.org.', 'diffverity-file-integrity-source-diff' ) ); ?>
+				<?php $this->trust_item( 'Official Core Bundle', __( 'Matches a recorded component copy from the current or a recent official WordPress distribution.', 'diffverity-file-integrity-source-diff' ) ); ?>
+				<?php $this->trust_item( 'Local Baseline', __( 'Shows changes after an administrator-created snapshot; it does not prove authenticity.', 'diffverity-file-integrity-source-diff' ) ); ?>
+				<?php $this->trust_item( 'No Trusted Source', __( 'No independent source was available. This is not itself a security warning.', 'diffverity-file-integrity-source-diff' ) ); ?>
 			</div>
-			<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=diffverity-scan' ) ); ?>"><?php esc_html_e( 'Run Integrity Scan', 'diffverity' ); ?></a></p>
+			<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=diffverity-scan' ) ); ?>"><?php esc_html_e( 'Run Integrity Scan', 'diffverity-file-integrity-source-diff' ); ?></a></p>
 		</div>
 		<?php
 		$this->footer();
@@ -150,24 +155,24 @@ final class Admin {
 				}
 			)
 		);
-		$this->header( __( 'Run Integrity Scan', 'diffverity' ), __( 'Components are processed in bounded batches. You can safely cancel the scan.', 'diffverity' ) );
+		$this->header( __( 'Run Integrity Scan', 'diffverity-file-integrity-source-diff' ), __( 'Components are processed in bounded batches. You can safely cancel the scan.', 'diffverity-file-integrity-source-diff' ) );
 		?>
 		<div class="diffverity-panel diffverity-scan" data-diffverity-scan>
 			<div class="diffverity-inline-form">
-				<label for="diffverity-scan-component"><strong><?php esc_html_e( 'Scan target', 'diffverity' ); ?></strong></label>
+				<label for="diffverity-scan-component"><strong><?php esc_html_e( 'Scan target', 'diffverity-file-integrity-source-diff' ); ?></strong></label>
 				<select id="diffverity-scan-component" data-diffverity-scan-component>
-					<option value=""><?php esc_html_e( 'All core, plugins, and themes', 'diffverity' ); ?></option>
+					<option value=""><?php esc_html_e( 'All core, plugins, and themes', 'diffverity-file-integrity-source-diff' ); ?></option>
 					<?php foreach ( $components as $component ) : ?>
 						<option value="<?php echo esc_attr( $component['type'] . ':' . $component['slug'] ); ?>"><?php echo esc_html( $component['name'] . ' ' . $component['version'] . ' (' . ucfirst( $component['type'] ) . ')' ); ?></option>
 					<?php endforeach; ?>
 				</select>
 			</div>
-			<div class="diffverity-actions"><button type="button" class="button button-primary button-hero" data-diffverity-start><?php esc_html_e( 'Run Integrity Scan', 'diffverity' ); ?></button><button type="button" class="button" data-diffverity-cancel hidden><?php esc_html_e( 'Cancel Scan', 'diffverity' ); ?></button></div>
+			<div class="diffverity-actions"><button type="button" class="button button-primary button-hero" data-diffverity-start><?php esc_html_e( 'Run Integrity Scan', 'diffverity-file-integrity-source-diff' ); ?></button><button type="button" class="button" data-diffverity-cancel hidden><?php esc_html_e( 'Cancel Scan', 'diffverity-file-integrity-source-diff' ); ?></button></div>
 			<div class="diffverity-progress" hidden data-diffverity-progress role="status" aria-live="polite">
 				<div class="diffverity-progress__track"><span data-diffverity-progress-bar></span></div>
 				<p data-diffverity-progress-text></p>
 			</div>
-			<p class="description"><?php esc_html_e( 'A source lookup failure is reported separately from an integrity mismatch. Scanning never modifies installed files.', 'diffverity' ); ?></p>
+			<p class="description"><?php esc_html_e( 'A source lookup failure is reported separately from an integrity mismatch. Scanning never modifies installed files.', 'diffverity-file-integrity-source-diff' ); ?></p>
 		</div>
 		<?php
 		$this->footer();
@@ -185,43 +190,109 @@ final class Admin {
 		$type             = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
 		$type             = in_array( $type, array( 'core', 'plugin', 'theme' ), true ) ? $type : '';
 		$component        = isset( $_GET['component'] ) ? sanitize_key( wp_unslash( $_GET['component'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
-		$rows             = $scan_id ? ( new Results_Repository() )->query( $scan_id, $status, $type, 500, 0, $component ) : array();
-		$this->header( __( 'Changes', 'diffverity' ), __( 'Every status describes evidence, not intent.', 'diffverity' ) );
+		$page_number      = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination.
+		$per_page         = 100;
+		$results          = new Results_Repository();
+		$total_results    = $scan_id ? $results->count_filtered( $scan_id, $status, $type, $component ) : 0;
+		$total_pages      = max( 1, (int) ceil( $total_results / $per_page ) );
+		$page_number      = min( $page_number, $total_pages );
+		$rows             = $scan_id ? $results->query( $scan_id, $status, $type, $per_page, ( $page_number - 1 ) * $per_page, $component ) : array();
+		$this->header( __( 'Changes', 'diffverity-file-integrity-source-diff' ), __( 'Every status describes evidence, not intent.', 'diffverity-file-integrity-source-diff' ) );
 		?>
 		<form class="diffverity-filters" method="get">
 			<input type="hidden" name="page" value="diffverity-changes">
-			<?php if ( $scan_id ) : ?><input type="hidden" name="scan_id" value="<?php echo esc_attr( $scan_id ); ?>"><?php endif; ?>
-			<?php if ( $component ) : ?><input type="hidden" name="component" value="<?php echo esc_attr( $component ); ?>"><?php endif; ?>
-			<label><?php esc_html_e( 'Status', 'diffverity' ); ?> <select name="status"><option value=""><?php esc_html_e( 'All', 'diffverity' ); ?></option>
+			<?php
+			if ( $scan_id ) :
+				?>
+				<input type="hidden" name="scan_id" value="<?php echo esc_attr( $scan_id ); ?>"><?php endif; ?>
+			<?php
+			if ( $component ) :
+				?>
+				<input type="hidden" name="component" value="<?php echo esc_attr( $component ); ?>"><?php endif; ?>
+			<label><?php esc_html_e( 'Status', 'diffverity-file-integrity-source-diff' ); ?> <select name="status"><option value=""><?php esc_html_e( 'All', 'diffverity-file-integrity-source-diff' ); ?></option>
 			<?php
 			foreach ( $allowed_statuses as $item ) :
 				?>
 				<option value="<?php echo esc_attr( $item ); ?>" <?php selected( $status, $item ); ?>><?php echo esc_html( $item ); ?></option><?php endforeach; ?></select></label>
-			<label><?php esc_html_e( 'Component type', 'diffverity' ); ?> <select name="type"><option value=""><?php esc_html_e( 'All', 'diffverity' ); ?></option><option value="core" <?php selected( $type, 'core' ); ?>><?php esc_html_e( 'Core', 'diffverity' ); ?></option><option value="plugin" <?php selected( $type, 'plugin' ); ?>><?php esc_html_e( 'Plugin', 'diffverity' ); ?></option><option value="theme" <?php selected( $type, 'theme' ); ?>><?php esc_html_e( 'Theme', 'diffverity' ); ?></option></select></label>
-			<button class="button"><?php esc_html_e( 'Filter', 'diffverity' ); ?></button>
-			<?php if ( $component ) : ?><a class="button" href="<?php echo esc_url( add_query_arg( array( 'page' => 'diffverity-changes', 'scan_id' => $scan_id ), admin_url( 'admin.php' ) ) ); ?>"><?php esc_html_e( 'Clear component', 'diffverity' ); ?></a><?php endif; ?>
+			<label><?php esc_html_e( 'Component type', 'diffverity-file-integrity-source-diff' ); ?> <select name="type"><option value=""><?php esc_html_e( 'All', 'diffverity-file-integrity-source-diff' ); ?></option><option value="core" <?php selected( $type, 'core' ); ?>><?php esc_html_e( 'Core', 'diffverity-file-integrity-source-diff' ); ?></option><option value="plugin" <?php selected( $type, 'plugin' ); ?>><?php esc_html_e( 'Plugin', 'diffverity-file-integrity-source-diff' ); ?></option><option value="theme" <?php selected( $type, 'theme' ); ?>><?php esc_html_e( 'Theme', 'diffverity-file-integrity-source-diff' ); ?></option></select></label>
+			<button class="button"><?php esc_html_e( 'Filter', 'diffverity-file-integrity-source-diff' ); ?></button>
+			<?php
+			if ( $component ) :
+				?>
+				<a class="button" href="
+				<?php
+				echo esc_url(
+					add_query_arg(
+						array(
+							'page'    => 'diffverity-changes',
+							'scan_id' => $scan_id,
+						),
+						admin_url( 'admin.php' )
+					)
+				);
+				?>
+				"><?php esc_html_e( 'Clear component', 'diffverity-file-integrity-source-diff' ); ?></a><?php endif; ?>
 		</form>
-		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity' ); ?></th><th><?php esc_html_e( 'File', 'diffverity' ); ?></th><th><?php esc_html_e( 'Status', 'diffverity' ); ?></th><th><?php esc_html_e( 'Trust Source', 'diffverity' ); ?></th><th><?php esc_html_e( 'Last Checked', 'diffverity' ); ?></th><th><?php esc_html_e( 'Action', 'diffverity' ); ?></th></tr></thead><tbody>
+		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'File', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Status', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Trust Source', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Last Checked', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Action', 'diffverity-file-integrity-source-diff' ); ?></th></tr></thead><tbody>
 		<?php
 		if ( ! $rows ) :
 			?>
-			<tr><td colspan="7"><?php esc_html_e( 'No results match this view.', 'diffverity' ); ?></td></tr><?php endif; ?>
+			<tr><td colspan="7"><?php esc_html_e( 'No results match this view.', 'diffverity-file-integrity-source-diff' ); ?></td></tr><?php endif; ?>
 		<?php
 		foreach ( $rows as $row ) :
 			?>
-			<?php $component_url = add_query_arg( array( 'page' => 'diffverity-changes', 'scan_id' => $scan_id, 'type' => $row['component_type'], 'component' => $row['component_slug'] ), admin_url( 'admin.php' ) ); ?>
-			<tr><td data-label="<?php esc_attr_e( 'Component', 'diffverity' ); ?>"><strong><a href="<?php echo esc_url( $component_url ); ?>"><?php echo esc_html( $row['component_name'] ? $row['component_name'] : $row['component_slug'] ); ?></a></strong><br><small><?php echo esc_html( ucfirst( $row['component_type'] ) ); ?></small></td><td data-label="<?php esc_attr_e( 'Version', 'diffverity' ); ?>"><?php echo esc_html( $row['component_version'] ); ?></td><td data-label="<?php esc_attr_e( 'File', 'diffverity' ); ?>"><code><?php echo esc_html( $row['relative_path'] ? $row['relative_path'] : '—' ); ?></code></td><td data-label="<?php esc_attr_e( 'Status', 'diffverity' ); ?>"><?php $this->status_badge( $row['status'] ); ?></td><td data-label="<?php esc_attr_e( 'Trust Source', 'diffverity' ); ?>"><?php echo esc_html( $row['trust_source'] ); ?></td><td data-label="<?php esc_attr_e( 'Last Checked', 'diffverity' ); ?>"><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $row['checked_at'] ) ); ?></td><td data-label="<?php esc_attr_e( 'Action', 'diffverity' ); ?>"><button type="button" class="button button-small" data-diffverity-details data-result='<?php echo esc_attr( wp_json_encode( array_intersect_key( $row, array_flip( array( 'status', 'message', 'local_hash', 'trusted_hash', 'local_size', 'trusted_size', 'relative_path', 'trust_source', 'source_version' ) ) ) ) ); ?>'><?php esc_html_e( 'Details', 'diffverity' ); ?></button> 
+			<?php
+			$component_url = add_query_arg(
+				array(
+					'page'      => 'diffverity-changes',
+					'scan_id'   => $scan_id,
+					'type'      => $row['component_type'],
+					'component' => $row['component_slug'],
+				),
+				admin_url( 'admin.php' )
+			);
+			?>
+			<tr><td data-label="<?php esc_attr_e( 'Component', 'diffverity-file-integrity-source-diff' ); ?>"><strong><a href="<?php echo esc_url( $component_url ); ?>"><?php echo esc_html( $row['component_name'] ? $row['component_name'] : $row['component_slug'] ); ?></a></strong><br><small><?php echo esc_html( ucfirst( $row['component_type'] ) ); ?></small></td><td data-label="<?php esc_attr_e( 'Version', 'diffverity-file-integrity-source-diff' ); ?>"><?php echo esc_html( $row['component_version'] ); ?></td><td data-label="<?php esc_attr_e( 'File', 'diffverity-file-integrity-source-diff' ); ?>"><code><?php echo esc_html( $row['relative_path'] ? $row['relative_path'] : '—' ); ?></code></td><td data-label="<?php esc_attr_e( 'Status', 'diffverity-file-integrity-source-diff' ); ?>"><?php $this->status_badge( $row['status'] ); ?></td><td data-label="<?php esc_attr_e( 'Trust Source', 'diffverity-file-integrity-source-diff' ); ?>"><?php echo esc_html( $row['trust_source'] ); ?></td><td data-label="<?php esc_attr_e( 'Last Checked', 'diffverity-file-integrity-source-diff' ); ?>"><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $row['checked_at'] ) ); ?></td><td data-label="<?php esc_attr_e( 'Action', 'diffverity-file-integrity-source-diff' ); ?>"><button type="button" class="button button-small" data-diffverity-details data-result='<?php echo esc_attr( wp_json_encode( array_intersect_key( $row, array_flip( array( 'status', 'message', 'local_hash', 'trusted_hash', 'local_size', 'trusted_size', 'relative_path', 'trust_source', 'source_version' ) ) ) ) ); ?>'><?php esc_html_e( 'Details', 'diffverity-file-integrity-source-diff' ); ?></button> 
 			<?php
 			if ( in_array( $row['status'], array( 'Modified', 'Soft Difference' ), true ) && 'Local Baseline' !== $row['trust_source'] ) :
 				?>
-			<button type="button" class="button button-small" data-diffverity-diff data-id="<?php echo esc_attr( $row['id'] ); ?>" data-scan="<?php echo esc_attr( $scan_id ); ?>"><?php esc_html_e( 'View Diff', 'diffverity' ); ?></button><?php endif; ?>
-			<?php if ( in_array( $row['status'], array( 'Modified', 'Missing', 'Soft Difference' ), true ) && in_array( $row['trust_source'], array( 'Officially Verified', 'Official Source Available', 'Official Core Bundle' ), true ) ) : ?>
-			<button type="button" class="button button-small" data-diffverity-restore data-id="<?php echo esc_attr( $row['id'] ); ?>" data-scan="<?php echo esc_attr( $scan_id ); ?>"><?php esc_html_e( 'Restore Original', 'diffverity' ); ?></button><?php endif; ?></td></tr><?php endforeach; ?>
+			<button type="button" class="button button-small" data-diffverity-diff data-id="<?php echo esc_attr( $row['id'] ); ?>" data-scan="<?php echo esc_attr( $scan_id ); ?>"><?php esc_html_e( 'View Diff', 'diffverity-file-integrity-source-diff' ); ?></button><?php endif; ?>
+			</td></tr><?php endforeach; ?>
 		</tbody></table></div>
+		<?php if ( $total_pages > 1 ) : ?>
+			<div class="tablenav bottom"><div class="tablenav-pages">
+				<span class="displaying-num"><?php echo esc_html( sprintf( /* translators: %s: Number of matching file results. */ _n( '%s item', '%s items', $total_results, 'diffverity-file-integrity-source-diff' ), number_format_i18n( $total_results ) ) ); ?></span>
+				<?php
+				$pagination_base = add_query_arg(
+					array(
+						'page'      => 'diffverity-changes',
+						'scan_id'   => $scan_id,
+						'status'    => $status,
+						'type'      => $type,
+						'component' => $component,
+						'paged'     => '%#%',
+					),
+					admin_url( 'admin.php' )
+				);
+				echo wp_kses_post(
+					paginate_links(
+						array(
+							'base'      => str_replace( '%25%23%25', '%#%', $pagination_base ),
+							'format'    => '',
+							'current'   => $page_number,
+							'total'     => $total_pages,
+							'prev_text' => __( '&laquo; Previous', 'diffverity-file-integrity-source-diff' ),
+							'next_text' => __( 'Next &raquo;', 'diffverity-file-integrity-source-diff' ),
+						)
+					)
+				);
+				?>
+			</div></div>
+		<?php endif; ?>
 		<?php
 		if ( $scan_id ) :
 			?>
-			<div class="diffverity-export"><span><?php esc_html_e( 'Export:', 'diffverity' ); ?></span>
+			<div class="diffverity-export"><span><?php esc_html_e( 'Export:', 'diffverity-file-integrity-source-diff' ); ?></span>
 			<?php
 			foreach ( array( 'json', 'csv', 'txt' ) as $format ) :
 				?>
@@ -241,23 +312,23 @@ final class Admin {
 			}
 		);
 		$baselines  = ( new Baseline_Repository() )->all();
-		$this->header( __( 'Local Baselines', 'diffverity' ), __( 'Monitor private, premium, or custom components that have no independently verifiable source.', 'diffverity' ) );
+		$this->header( __( 'Local Baselines', 'diffverity-file-integrity-source-diff' ), __( 'Monitor private, premium, or custom components that have no independently verifiable source.', 'diffverity-file-integrity-source-diff' ) );
 		?>
-		<div class="notice notice-warning inline"><p><strong><?php esc_html_e( 'Important:', 'diffverity' ); ?></strong> <?php esc_html_e( 'DiffVerity cannot determine whether the current files are already compromised. A baseline only records their current state so future changes can be detected.', 'diffverity' ); ?></p></div>
-		<div class="diffverity-panel"><h2><?php esc_html_e( 'Create Local Baseline', 'diffverity' ); ?></h2><div class="diffverity-inline-form"><label class="screen-reader-text" for="diffverity-component"><?php esc_html_e( 'Component', 'diffverity' ); ?></label><select id="diffverity-component" data-diffverity-component>
+		<div class="notice notice-warning inline"><p><strong><?php esc_html_e( 'Important:', 'diffverity-file-integrity-source-diff' ); ?></strong> <?php esc_html_e( 'DiffVerity cannot determine whether the current files are already compromised. A baseline only records their current state so future changes can be detected.', 'diffverity-file-integrity-source-diff' ); ?></p></div>
+		<div class="diffverity-panel"><h2><?php esc_html_e( 'Create Local Baseline', 'diffverity-file-integrity-source-diff' ); ?></h2><div class="diffverity-inline-form"><label class="screen-reader-text" for="diffverity-component"><?php esc_html_e( 'Component', 'diffverity-file-integrity-source-diff' ); ?></label><select id="diffverity-component" data-diffverity-component>
 		<?php
 		foreach ( $components as $component ) :
 			?>
-			<option value="<?php echo esc_attr( $component['type'] . ':' . $component['slug'] ); ?>"><?php echo esc_html( $component['name'] . ' ' . $component['version'] . ' (' . ucfirst( $component['type'] ) . ')' ); ?></option><?php endforeach; ?></select><button type="button" class="button button-primary" data-diffverity-baseline-create><?php esc_html_e( 'Create Local Baseline', 'diffverity' ); ?></button></div></div>
-		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity' ); ?></th><th><?php esc_html_e( 'Created', 'diffverity' ); ?></th><th><?php esc_html_e( 'State', 'diffverity' ); ?></th><th><?php esc_html_e( 'Action', 'diffverity' ); ?></th></tr></thead><tbody>
+			<option value="<?php echo esc_attr( $component['type'] . ':' . $component['slug'] ); ?>"><?php echo esc_html( $component['name'] . ' ' . $component['version'] . ' (' . ucfirst( $component['type'] ) . ')' ); ?></option><?php endforeach; ?></select><button type="button" class="button button-primary" data-diffverity-baseline-create><?php esc_html_e( 'Create Local Baseline', 'diffverity-file-integrity-source-diff' ); ?></button></div></div>
+		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Component', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Version', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Created', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'State', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Action', 'diffverity-file-integrity-source-diff' ); ?></th></tr></thead><tbody>
 		<?php
 		if ( ! $baselines ) :
 			?>
-			<tr><td colspan="5"><?php esc_html_e( 'No local baselines exist.', 'diffverity' ); ?></td></tr><?php endif; ?>
+			<tr><td colspan="5"><?php esc_html_e( 'No local baselines exist.', 'diffverity-file-integrity-source-diff' ); ?></td></tr><?php endif; ?>
 			<?php
 			foreach ( $baselines as $baseline ) :
 				?>
-			<tr><td><?php echo esc_html( $baseline['component_name'] ); ?><br><small><?php echo esc_html( ucfirst( $baseline['component_type'] ) ); ?></small></td><td><?php echo esc_html( $baseline['component_version'] ); ?></td><td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $baseline['created_at'] ) ); ?></td><td><?php echo $baseline['is_current'] ? esc_html__( 'Current baseline', 'diffverity' ) : esc_html__( 'Previous baseline', 'diffverity' ); ?></td><td><button type="button" class="button button-small button-link-delete" data-diffverity-baseline-delete="<?php echo esc_attr( $baseline['id'] ); ?>"><?php esc_html_e( 'Delete', 'diffverity' ); ?></button></td></tr><?php endforeach; ?></tbody></table></div>
+			<tr><td><?php echo esc_html( $baseline['component_name'] ); ?><br><small><?php echo esc_html( ucfirst( $baseline['component_type'] ) ); ?></small></td><td><?php echo esc_html( $baseline['component_version'] ); ?></td><td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $baseline['created_at'] ) ); ?></td><td><?php echo $baseline['is_current'] ? esc_html__( 'Current baseline', 'diffverity-file-integrity-source-diff' ) : esc_html__( 'Previous baseline', 'diffverity-file-integrity-source-diff' ); ?></td><td><button type="button" class="button button-small button-link-delete" data-diffverity-baseline-delete="<?php echo esc_attr( $baseline['id'] ); ?>"><?php esc_html_e( 'Delete', 'diffverity-file-integrity-source-diff' ); ?></button></td></tr><?php endforeach; ?></tbody></table></div>
 		<?php
 		$this->footer();
 	}
@@ -268,19 +339,19 @@ final class Admin {
 		$repository = new History_Repository();
 		$scans      = $repository->recent( 100 );
 		$comparison = $this->history_comparison( $scans );
-		$this->header( __( 'Scan History', 'diffverity' ), __( 'History is capped; full source code is never stored.', 'diffverity' ) );
+		$this->header( __( 'Scan History', 'diffverity-file-integrity-source-diff' ), __( 'History is capped; full source code is never stored.', 'diffverity-file-integrity-source-diff' ) );
 		if ( $comparison ) :
 			?>
-		<div class="diffverity-grid diffverity-grid--metrics"><?php $this->metric( __( 'New differences', 'diffverity' ), $comparison['new'], 'changed' ); ?><?php $this->metric( __( 'Resolved differences', 'diffverity' ), $comparison['resolved'], 'verified' ); ?><?php $this->metric( __( 'Unchanged differences', 'diffverity' ), $comparison['unchanged'], 'neutral' ); ?></div><?php endif; ?>
-		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Scan', 'diffverity' ); ?></th><th><?php esc_html_e( 'Started', 'diffverity' ); ?></th><th><?php esc_html_e( 'Status', 'diffverity' ); ?></th><th><?php esc_html_e( 'Components', 'diffverity' ); ?></th><th><?php esc_html_e( 'Duration', 'diffverity' ); ?></th><th><?php esc_html_e( 'Actions', 'diffverity' ); ?></th></tr></thead><tbody>
+		<div class="diffverity-grid diffverity-grid--metrics"><?php $this->metric( __( 'New differences', 'diffverity-file-integrity-source-diff' ), $comparison['new'], 'changed' ); ?><?php $this->metric( __( 'Resolved differences', 'diffverity-file-integrity-source-diff' ), $comparison['resolved'], 'verified' ); ?><?php $this->metric( __( 'Unchanged differences', 'diffverity-file-integrity-source-diff' ), $comparison['unchanged'], 'neutral' ); ?></div><?php endif; ?>
+		<div class="diffverity-table-wrap"><table class="widefat striped diffverity-table"><thead><tr><th><?php esc_html_e( 'Scan', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Started', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Status', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Components', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Duration', 'diffverity-file-integrity-source-diff' ); ?></th><th><?php esc_html_e( 'Actions', 'diffverity-file-integrity-source-diff' ); ?></th></tr></thead><tbody>
 		<?php
 		if ( ! $scans ) :
 			?>
-			<tr><td colspan="6"><?php esc_html_e( 'No scans have run yet.', 'diffverity' ); ?></td></tr><?php endif; ?>
+			<tr><td colspan="6"><?php esc_html_e( 'No scans have run yet.', 'diffverity-file-integrity-source-diff' ); ?></td></tr><?php endif; ?>
 			<?php
 			foreach ( $scans as $scan ) :
 				?>
-			<tr><td>#<?php echo esc_html( $scan['id'] ); ?></td><td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $scan['started_at'] ) ); ?></td><td><?php echo esc_html( ucfirst( $scan['status'] ) ); ?></td><td><?php echo esc_html( $scan['processed_components'] . ' / ' . $scan['total_components'] ); ?></td><td><?php echo esc_html( number_format_i18n( (int) $scan['duration_ms'] / 1000, 2 ) . 's' ); ?></td><td><a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=diffverity-changes&scan_id=' . absint( $scan['id'] ) ) ); ?>"><?php esc_html_e( 'View', 'diffverity' ); ?></a> <a class="button button-small button-link-delete" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=diffverity_delete_history&scan_id=' . absint( $scan['id'] ) ), 'diffverity_delete_history_' . absint( $scan['id'] ) ) ); ?>"><?php esc_html_e( 'Delete', 'diffverity' ); ?></a></td></tr><?php endforeach; ?></tbody></table></div>
+			<tr><td>#<?php echo esc_html( $scan['id'] ); ?></td><td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $scan['started_at'] ) ); ?></td><td><?php echo esc_html( ucfirst( $scan['status'] ) ); ?></td><td><?php echo esc_html( $scan['processed_components'] . ' / ' . $scan['total_components'] ); ?></td><td><?php echo esc_html( number_format_i18n( (int) $scan['duration_ms'] / 1000, 2 ) . 's' ); ?></td><td><a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=diffverity-changes&scan_id=' . absint( $scan['id'] ) ) ); ?>"><?php esc_html_e( 'View', 'diffverity-file-integrity-source-diff' ); ?></a> <a class="button button-small button-link-delete" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=diffverity_delete_history&scan_id=' . absint( $scan['id'] ) ), 'diffverity_delete_history_' . absint( $scan['id'] ) ) ); ?>"><?php esc_html_e( 'Delete', 'diffverity-file-integrity-source-diff' ); ?></a></td></tr><?php endforeach; ?></tbody></table></div>
 		<?php
 		$this->footer();
 	}
@@ -289,21 +360,21 @@ final class Admin {
 	public function render_settings() {
 		Capabilities::enforce();
 		$s = Plugin::settings();
-		$this->header( __( 'Settings', 'diffverity' ), __( 'Conservative resource limits protect shared hosting.', 'diffverity' ) );
+		$this->header( __( 'Settings', 'diffverity-file-integrity-source-diff' ), __( 'Conservative resource limits protect shared hosting.', 'diffverity-file-integrity-source-diff' ) );
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="diffverity-panel diffverity-settings"><input type="hidden" name="action" value="diffverity_save_settings"><?php wp_nonce_field( 'diffverity_save_settings', 'diffverity_nonce' ); ?>
 		<table class="form-table" role="presentation"><tbody>
-		<?php $this->number_setting( 'files_per_batch', __( 'Files per batch', 'diffverity' ), $s['files_per_batch'], 25, 500, __( 'Default 200. Larger values use more CPU per request.', 'diffverity' ) ); ?>
-		<?php $this->number_setting( 'max_diff_bytes', __( 'Maximum text diff bytes', 'diffverity' ), $s['max_diff_bytes'], 65536, 5242880, __( 'Default 1 MB. Larger or binary files show metadata only.', 'diffverity' ) ); ?>
-		<?php $this->number_setting( 'http_timeout', __( 'HTTP timeout (seconds)', 'diffverity' ), $s['http_timeout'], 5, 60, __( 'Applies only to authoritative WordPress.org requests.', 'diffverity' ) ); ?>
-		<?php $this->number_setting( 'max_package_bytes', __( 'Maximum package bytes', 'diffverity' ), $s['max_package_bytes'], 10485760, 209715200, __( 'Default 50 MB.', 'diffverity' ) ); ?>
-		<?php $this->number_setting( 'history_retention', __( 'Scan history retention', 'diffverity' ), $s['history_retention'], 1, 100, __( 'Default 20, maximum 100.', 'diffverity' ) ); ?>
-		<?php $this->number_setting( 'baseline_retention', __( 'Baseline retention per component', 'diffverity' ), $s['baseline_retention'], 1, 10, __( 'Default 3, maximum 10.', 'diffverity' ) ); ?>
-		<tr><th scope="row"><?php esc_html_e( 'Strict comparison', 'diffverity' ); ?></th><td><label><input type="checkbox" name="strict_comparison" value="1" <?php checked( $s['strict_comparison'] ); ?>> <?php esc_html_e( 'Report every byte-level mismatch as a full change.', 'diffverity' ); ?></label></td></tr>
-		<tr><th scope="row"><label for="diffverity-excluded-components"><?php esc_html_e( 'Excluded components', 'diffverity' ); ?></label></th><td><textarea class="large-text code" rows="4" id="diffverity-excluded-components" name="excluded_components"><?php echo esc_textarea( implode( "\n", $s['excluded_components'] ) ); ?></textarea><p class="description"><?php esc_html_e( 'One controlled identifier per line, such as plugin:example-plugin or theme:example-theme.', 'diffverity' ); ?></p></td></tr>
-		<tr><th scope="row"><label for="diffverity-excluded-paths"><?php esc_html_e( 'Excluded relative paths', 'diffverity' ); ?></label></th><td><textarea class="large-text code" rows="4" id="diffverity-excluded-paths" name="excluded_paths"><?php echo esc_textarea( implode( "\n", $s['excluded_paths'] ) ); ?></textarea><p class="description"><?php esc_html_e( 'Relative paths only. Traversal and absolute paths are rejected.', 'diffverity' ); ?></p></td></tr>
-		<tr><th scope="row"><label for="diffverity-excluded-extensions"><?php esc_html_e( 'Excluded extensions', 'diffverity' ); ?></label></th><td><input class="regular-text" id="diffverity-excluded-extensions" name="excluded_extensions" value="<?php echo esc_attr( implode( ', ', $s['excluded_extensions'] ) ); ?>"><p class="description"><?php esc_html_e( 'Comma-separated extensions without dots. PHP is never excluded by default.', 'diffverity' ); ?></p></td></tr>
-		<tr><th scope="row"><?php esc_html_e( 'Uninstall cleanup', 'diffverity' ); ?></th><td><label><input type="checkbox" name="delete_on_uninstall" value="1" <?php checked( $s['delete_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete DiffVerity settings, history, and baselines when the plugin is deleted.', 'diffverity' ); ?></label></td></tr>
+		<?php $this->number_setting( 'files_per_batch', __( 'Files per batch', 'diffverity-file-integrity-source-diff' ), $s['files_per_batch'], 25, 500, __( 'Default 200. Larger values use more CPU per request.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<?php $this->number_setting( 'max_diff_bytes', __( 'Maximum text diff bytes', 'diffverity-file-integrity-source-diff' ), $s['max_diff_bytes'], 65536, 5242880, __( 'Default 1 MB. Larger or binary files show metadata only.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<?php $this->number_setting( 'http_timeout', __( 'HTTP timeout (seconds)', 'diffverity-file-integrity-source-diff' ), $s['http_timeout'], 5, 60, __( 'Applies only to authoritative WordPress.org requests.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<?php $this->number_setting( 'max_package_bytes', __( 'Maximum package bytes', 'diffverity-file-integrity-source-diff' ), $s['max_package_bytes'], 10485760, 209715200, __( 'Default 50 MB.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<?php $this->number_setting( 'history_retention', __( 'Scan history retention', 'diffverity-file-integrity-source-diff' ), $s['history_retention'], 1, 100, __( 'Default 20, maximum 100.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<?php $this->number_setting( 'baseline_retention', __( 'Baseline retention per component', 'diffverity-file-integrity-source-diff' ), $s['baseline_retention'], 1, 10, __( 'Default 3, maximum 10.', 'diffverity-file-integrity-source-diff' ) ); ?>
+		<tr><th scope="row"><?php esc_html_e( 'Strict comparison', 'diffverity-file-integrity-source-diff' ); ?></th><td><label><input type="checkbox" name="strict_comparison" value="1" <?php checked( $s['strict_comparison'] ); ?>> <?php esc_html_e( 'Report every byte-level mismatch as a full change.', 'diffverity-file-integrity-source-diff' ); ?></label></td></tr>
+		<tr><th scope="row"><label for="diffverity-excluded-components"><?php esc_html_e( 'Excluded components', 'diffverity-file-integrity-source-diff' ); ?></label></th><td><textarea class="large-text code" rows="4" id="diffverity-excluded-components" name="excluded_components"><?php echo esc_textarea( implode( "\n", $s['excluded_components'] ) ); ?></textarea><p class="description"><?php esc_html_e( 'One controlled identifier per line, such as plugin:example-plugin or theme:example-theme.', 'diffverity-file-integrity-source-diff' ); ?></p></td></tr>
+		<tr><th scope="row"><label for="diffverity-excluded-paths"><?php esc_html_e( 'Excluded relative paths', 'diffverity-file-integrity-source-diff' ); ?></label></th><td><textarea class="large-text code" rows="4" id="diffverity-excluded-paths" name="excluded_paths"><?php echo esc_textarea( implode( "\n", $s['excluded_paths'] ) ); ?></textarea><p class="description"><?php esc_html_e( 'Relative paths only. Traversal and absolute paths are rejected.', 'diffverity-file-integrity-source-diff' ); ?></p></td></tr>
+		<tr><th scope="row"><label for="diffverity-excluded-extensions"><?php esc_html_e( 'Excluded extensions', 'diffverity-file-integrity-source-diff' ); ?></label></th><td><input class="regular-text" id="diffverity-excluded-extensions" name="excluded_extensions" value="<?php echo esc_attr( implode( ', ', $s['excluded_extensions'] ) ); ?>"><p class="description"><?php esc_html_e( 'Comma-separated extensions without dots. PHP is never excluded by default.', 'diffverity-file-integrity-source-diff' ); ?></p></td></tr>
+		<tr><th scope="row"><?php esc_html_e( 'Uninstall cleanup', 'diffverity-file-integrity-source-diff' ); ?></th><td><label><input type="checkbox" name="delete_on_uninstall" value="1" <?php checked( $s['delete_on_uninstall'] ); ?>> <?php esc_html_e( 'Delete DiffVerity settings, history, and baselines when the plugin is deleted.', 'diffverity-file-integrity-source-diff' ); ?></label></td></tr>
 		</tbody></table><?php submit_button(); ?></form>
 		<?php
 		$this->footer();
@@ -316,7 +387,7 @@ final class Admin {
 		$key   = isset( $_POST['component'] ) ? sanitize_text_field( wp_unslash( $_POST['component'] ) ) : '';
 		$parts = '' === $key ? array( '', '' ) : explode( ':', $key, 2 );
 		if ( 2 !== count( $parts ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid scan component identifier.', 'diffverity' ) ), 400 );
+			wp_send_json_error( array( 'message' => __( 'Invalid scan component identifier.', 'diffverity-file-integrity-source-diff' ) ), 400 );
 		}
 		$this->send_result( ( new Scan_Manager() )->start( sanitize_key( $parts[0] ), sanitize_key( $parts[1] ) ) ); }
 	/** Steps scan AJAX. */
@@ -339,10 +410,10 @@ final class Admin {
 		$key   = isset( $_POST['component'] ) ? sanitize_text_field( wp_unslash( $_POST['component'] ) ) : '';
 		$parts = explode( ':', $key, 2 );
 		if ( 2 !== count( $parts ) || ! in_array( $parts[0], array( 'plugin', 'theme' ), true ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid component identifier.', 'diffverity' ) ), 400 ); }
+			wp_send_json_error( array( 'message' => __( 'Invalid component identifier.', 'diffverity-file-integrity-source-diff' ) ), 400 ); }
 		$component = ( new Component_Registry() )->resolve( $parts[0], sanitize_key( $parts[1] ) );
 		if ( false === $component ) {
-			wp_send_json_error( array( 'message' => __( 'Component could not be resolved.', 'diffverity' ) ), 404 ); }
+			wp_send_json_error( array( 'message' => __( 'Component could not be resolved.', 'diffverity-file-integrity-source-diff' ) ), 404 ); }
 		$this->send_result( ( new Baseline_Repository() )->create( $component ) );
 	}
 
@@ -352,7 +423,7 @@ final class Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified by guard_ajax().
 		$id = isset( $_POST['baseline_id'] ) ? absint( $_POST['baseline_id'] ) : 0;
 		$ok = ( new Baseline_Repository() )->delete( $id );
-		$ok ? wp_send_json_success( array( 'deleted' => $id ) ) : wp_send_json_error( array( 'message' => __( 'Baseline not found.', 'diffverity' ) ), 404 ); }
+		$ok ? wp_send_json_success( array( 'deleted' => $id ) ) : wp_send_json_error( array( 'message' => __( 'Baseline not found.', 'diffverity-file-integrity-source-diff' ) ), 404 ); }
 
 	/** Returns a safe source diff AJAX. */
 	public function ajax_view_diff() {
@@ -363,22 +434,8 @@ final class Admin {
 		$scan_id = isset( $_POST['scan_id'] ) ? absint( $_POST['scan_id'] ) : 0;
 		$result  = ( new Results_Repository() )->get( $id, $scan_id );
 		if ( false === $result ) {
-			wp_send_json_error( array( 'message' => __( 'Scan result not found.', 'diffverity' ) ), 404 ); }
+			wp_send_json_error( array( 'message' => __( 'Scan result not found.', 'diffverity-file-integrity-source-diff' ) ), 404 ); }
 		$this->send_result( ( new Diff_Engine() )->compare( $result ) );
-	}
-
-	/** Restores one eligible file from its exact official package. */
-	public function ajax_restore_file() {
-		$this->guard_ajax();
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified by guard_ajax().
-		$id = isset( $_POST['result_id'] ) ? absint( $_POST['result_id'] ) : 0;
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified by guard_ajax().
-		$scan_id = isset( $_POST['scan_id'] ) ? absint( $_POST['scan_id'] ) : 0;
-		$result  = ( new Results_Repository() )->get( $id, $scan_id );
-		if ( false === $result ) {
-			wp_send_json_error( array( 'message' => __( 'Scan result not found.', 'diffverity' ) ), 404 );
-		}
-		$this->send_result( ( new File_Restorer() )->restore( $result ) );
 	}
 
 	/** Saves validated settings. */
@@ -529,7 +586,7 @@ final class Admin {
 	private function modal() {
 
 		?>
-	<div class="diffverity-modal" data-diffverity-modal hidden><div class="diffverity-modal__backdrop" data-diffverity-close></div><section class="diffverity-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="diffverity-modal-title"><header><h2 id="diffverity-modal-title"><?php esc_html_e( 'File Evidence', 'diffverity' ); ?></h2><button type="button" class="button" data-diffverity-close aria-label="<?php esc_attr_e( 'Close dialog', 'diffverity' ); ?>">×</button></header><div class="diffverity-modal__body" data-diffverity-modal-body></div></section></div>
+	<div class="diffverity-modal" data-diffverity-modal hidden><div class="diffverity-modal__backdrop" data-diffverity-close></div><section class="diffverity-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="diffverity-modal-title"><header><h2 id="diffverity-modal-title"><?php esc_html_e( 'File Evidence', 'diffverity-file-integrity-source-diff' ); ?></h2><button type="button" class="button" data-diffverity-close aria-label="<?php esc_attr_e( 'Close dialog', 'diffverity-file-integrity-source-diff' ); ?>">×</button></header><div class="diffverity-modal__body" data-diffverity-modal-body></div></section></div>
 		<?php
 	}
 	/**
@@ -603,18 +660,8 @@ final class Admin {
 		if ( count( $complete ) < 2 ) {
 			return false; }
 		$repo     = new Results_Repository();
-		$now      = $repo->query( (int) $complete[0]['id'], '', '', 50000, 0 );
-		$before   = $repo->query( (int) $complete[1]['id'], '', '', 50000, 0 );
-		$build    = static function ( $rows ) {
-			$set = array();
-			foreach ( $rows as $row ) {
-				if ( ! in_array( $row['status'], array( 'Verified', 'Skipped' ), true ) ) {
-					$set[ $row['component_type'] . '|' . $row['component_slug'] . '|' . $row['relative_path'] . '|' . $row['status'] ] = true;
-				}
-			} return $set;
-		};
-		$current  = $build( $now );
-		$previous = $build( $before );
+		$current  = $repo->difference_identities( (int) $complete[0]['id'] );
+		$previous = $repo->difference_identities( (int) $complete[1]['id'] );
 		return array(
 			'new'       => count( array_diff_key( $current, $previous ) ),
 			'resolved'  => count( array_diff_key( $previous, $current ) ),

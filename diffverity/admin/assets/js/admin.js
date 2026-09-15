@@ -82,19 +82,4 @@
 		modalBody.textContent = 'Loading one checksum-verified source file…'; openModal();
 		try { const data = await post( 'diffverity_view_diff', { result_id: button.dataset.id, scan_id: button.dataset.scan } ); modalBody.textContent = ''; if ( data.kind === 'text' ) { const wrapper = document.createElement( 'div' ); wrapper.className = 'diffverity-code-diff'; wrapper.innerHTML = data.html; modalBody.append( wrapper ); } else { const p = document.createElement( 'p' ); p.textContent = data.message; modalBody.append( p ); } } catch ( error ) { modalBody.textContent = error.message; }
 	} ) );
-	document.querySelectorAll( '[data-diffverity-restore]' ).forEach( ( button ) => button.addEventListener( 'click', async () => {
-		if ( ! window.confirm( config.labels.confirmRestore ) ) return;
-		button.disabled = true;
-		const original = button.textContent;
-		button.textContent = config.labels.restoring;
-		try {
-			const data = await post( 'diffverity_restore_file', { result_id: button.dataset.id, scan_id: button.dataset.scan } );
-			button.textContent = config.labels.restored;
-			button.title = data.message;
-		} catch ( error ) {
-			window.alert( error.message );
-			button.textContent = original;
-			button.disabled = false;
-		}
-	} ) );
 }() );

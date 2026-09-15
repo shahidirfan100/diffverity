@@ -26,7 +26,7 @@ final class Baseline_Source implements Source_Provider_Interface {
 	public function get_manifest( array $component ) {
 		$baseline = ( new Baseline_Repository() )->current( $component['type'], $component['slug'] );
 		if ( false === $baseline ) {
-			return new \WP_Error( 'diffverity_no_baseline', __( 'No local baseline exists for this component.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_no_baseline', __( 'No local baseline exists for this component.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		return array(
 			'files'            => $baseline['files'],
@@ -55,6 +55,6 @@ final class Baseline_Source implements Source_Provider_Interface {
 	 * @return \WP_Error
 	 */
 	public function materialize( array $component ) {
-		return new \WP_Error( 'diffverity_baseline_hashes_only', __( 'Local baselines retain hashes and metadata, not source-code copies.', 'diffverity' ) );
+		return new \WP_Error( 'diffverity_baseline_hashes_only', __( 'Local baselines retain hashes and metadata, not source-code copies.', 'diffverity-file-integrity-source-diff' ) );
 	}
 }

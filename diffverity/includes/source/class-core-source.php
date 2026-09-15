@@ -25,7 +25,7 @@ final class Core_Source extends Package_Source {
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		$checksums = get_core_checksums( $component['version'], $component['locale'] );
 		if ( ! is_array( $checksums ) || ! $checksums ) {
-			return new \WP_Error( 'diffverity_core_checksums_unavailable', __( 'Official core checksums are unavailable for this exact version and locale.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_core_checksums_unavailable', __( 'Official core checksums are unavailable for this exact version and locale.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$files = array();
 		foreach ( $checksums as $path => $hash ) {

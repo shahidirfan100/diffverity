@@ -58,7 +58,7 @@ final class Scan_Manager {
 	public function start( $component_type = '', $component_slug = '' ) {
 		$lock = get_transient( 'diffverity_scan_lock' );
 		if ( is_array( $lock ) && ! empty( $lock['scan_id'] ) ) {
-			return new \WP_Error( 'diffverity_scan_locked', __( 'Another integrity scan is already running.', 'diffverity' ), $lock );
+			return new \WP_Error( 'diffverity_scan_locked', __( 'Another integrity scan is already running.', 'diffverity-file-integrity-source-diff' ), $lock );
 		}
 		$settings       = Plugin::settings();
 		$all_components = array_values(
@@ -72,21 +72,21 @@ final class Scan_Manager {
 		$components     = $all_components;
 		if ( '' !== $component_type || '' !== $component_slug ) {
 			if ( ! in_array( $component_type, array( 'core', 'plugin', 'theme' ), true ) || '' === $component_slug ) {
-				return new \WP_Error( 'diffverity_scan_component_invalid', __( 'The selected scan component is invalid.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_scan_component_invalid', __( 'The selected scan component is invalid.', 'diffverity-file-integrity-source-diff' ) );
 			}
 			$selected = ( new Component_Registry() )->resolve( $component_type, $component_slug );
 			if ( false === $selected ) {
-				return new \WP_Error( 'diffverity_scan_component_missing', __( 'The selected component is no longer installed or cannot be resolved safely.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_scan_component_missing', __( 'The selected component is no longer installed or cannot be resolved safely.', 'diffverity-file-integrity-source-diff' ) );
 			}
 			$key = $selected['type'] . ':' . $selected['slug'];
 			if ( in_array( $key, (array) $settings['excluded_components'], true ) ) {
-				return new \WP_Error( 'diffverity_scan_component_excluded', __( 'The selected component is excluded in DiffVerity settings.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_scan_component_excluded', __( 'The selected component is excluded in DiffVerity settings.', 'diffverity-file-integrity-source-diff' ) );
 			}
 			$components = array( $selected );
 		}
 		$scan_id = $this->history->create( count( $components ) );
 		if ( ! $scan_id ) {
-			return new \WP_Error( 'diffverity_scan_create_failed', __( 'The scan record could not be created.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_scan_create_failed', __( 'The scan record could not be created.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$state = array(
 			'scan_id'   => $scan_id,
@@ -125,7 +125,7 @@ final class Scan_Manager {
 	public function step( $scan_id ) {
 		$state = $this->load_state( $scan_id );
 		if ( false === $state ) {
-			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( ! empty( $state['cancelled'] ) ) {
 			return $this->cancel( $scan_id );
@@ -193,7 +193,7 @@ final class Scan_Manager {
 			$rows[] = $this->result_row( $scan_id, $current['component'], $path, $local, $trusted, $current['trust'], $status );
 		}
 		if ( ! $this->results->insert_batch( $rows ) ) {
-			return new \WP_Error( 'diffverity_result_write_failed', __( 'The scan batch results could not be stored.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_result_write_failed', __( 'The scan batch results could not be stored.', 'diffverity-file-integrity-source-diff' ) );
 		}
 
 		$current['cursor'] += count( $paths );
@@ -219,7 +219,7 @@ final class Scan_Manager {
 	public function cancel( $scan_id ) {
 		$state = $this->load_state( $scan_id );
 		if ( false === $state ) {
-			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( is_array( $state['current'] ) ) {
 			$this->cleanup_current( $state['current'] );
@@ -243,7 +243,7 @@ final class Scan_Manager {
 	private function prepare_component( array $identifier, $scan_id ) {
 		$component = ( new Component_Registry() )->resolve( $identifier['type'], $identifier['slug'] );
 		if ( false === $component ) {
-			$this->results->insert_batch( array( $this->source_failure_row( $scan_id, $identifier, 'Not Verifiable', __( 'The component could not be resolved inside an approved WordPress directory.', 'diffverity' ) ) ) );
+			$this->results->insert_batch( array( $this->source_failure_row( $scan_id, $identifier, 'Not Verifiable', __( 'The component could not be resolved inside an approved WordPress directory.', 'diffverity-file-integrity-source-diff' ) ) ) );
 			return array( 'terminal' => true );
 		}
 		$source   = $this->source_for( $component );
@@ -288,7 +288,7 @@ final class Scan_Manager {
 			}
 		}
 		if ( in_array( $component['type'], array( 'plugin', 'theme' ), true ) && 'Local Baseline' !== $manifest['trust'] ) {
-			$header_file         = 'theme' === $component['type'] ? 'style.css' : $component['main_file'];
+			$header_file          = 'theme' === $component['type'] ? 'style.css' : $component['main_file'];
 			$header_trusted       = isset( $manifest['files'][ $header_file ] ) ? $manifest['files'][ $header_file ] : array();
 			$header_algorithm     = isset( $header_trusted['algorithm'] ) ? $header_trusted['algorithm'] : $manifest['algorithm'];
 			$local_header_hash    = 'md5' === $header_algorithm && isset( $local[ $header_file ]['md5'] ) ? $local[ $header_file ]['md5'] : ( isset( $local[ $header_file ]['hash'] ) ? $local[ $header_file ]['hash'] : '' );
@@ -417,7 +417,7 @@ final class Scan_Manager {
 			'relative_path'     => $path,
 			'status'            => $status['status'],
 			'trust_source'      => isset( $status['trust_source'] ) ? $status['trust_source'] : $trust,
-			'source_version'     => isset( $status['source_version'] ) ? $status['source_version'] : '',
+			'source_version'    => isset( $status['source_version'] ) ? $status['source_version'] : '',
 			'local_hash'        => isset( $status['local_hash'] ) ? $status['local_hash'] : ( is_array( $local ) && isset( $local['hash'] ) ? $local['hash'] : '' ),
 			'trusted_hash'      => isset( $status['trusted_hash'] ) ? $status['trusted_hash'] : ( is_array( $trusted ) && isset( $trusted['hash'] ) ? $trusted['hash'] : '' ),
 			'local_size'        => is_array( $local ) && isset( $local['size'] ) ? $local['size'] : 0,

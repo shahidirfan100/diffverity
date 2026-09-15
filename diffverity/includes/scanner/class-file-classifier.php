@@ -28,17 +28,17 @@ final class File_Classifier {
 	 */
 	public function classify( $local, $trusted, $trust, $algorithm, $strict, $version_changed ) {
 		if ( is_array( $local ) && ! empty( $local['symlink'] ) ) {
-			return $this->result( 'Skipped', 'review', __( 'Symbolic link skipped; DiffVerity does not follow links during scans.', 'diffverity' ) );
+			return $this->result( 'Skipped', 'review', __( 'Symbolic link skipped; DiffVerity does not follow links during scans.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$baseline = 'Local Baseline' === $trust;
 		if ( null === $local ) {
-			return $this->result( $baseline ? 'Baseline Missing' : 'Missing', 'important', __( 'The trusted manifest contains this file, but the installed file is missing.', 'diffverity' ) );
+			return $this->result( $baseline ? 'Baseline Missing' : 'Missing', 'important', __( 'The trusted manifest contains this file, but the installed file is missing.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( null === $trusted ) {
-			return $this->result( $baseline ? 'Baseline Added' : 'Unexpected', 'important', __( 'This file is present locally but is not part of the comparison manifest. That difference does not prove malicious intent.', 'diffverity' ) );
+			return $this->result( $baseline ? 'Baseline Added' : 'Unexpected', 'important', __( 'This file is present locally but is not part of the comparison manifest. That difference does not prove malicious intent.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( $version_changed && $baseline ) {
-			return $this->result( 'Baseline Changed', 'review', __( 'The component version changed after this baseline. Review the update before creating a replacement baseline.', 'diffverity' ) );
+			return $this->result( 'Baseline Changed', 'review', __( 'The component version changed after this baseline. Review the update before creating a replacement baseline.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$file_algorithm = isset( $trusted['algorithm'] ) ? $trusted['algorithm'] : $algorithm;
 		$local_hash     = 'md5' === $file_algorithm && isset( $local['md5'] ) ? $local['md5'] : $local['hash'];
@@ -48,7 +48,7 @@ final class File_Classifier {
 				return $this->result(
 					'Verified',
 					'informational',
-					$baseline ? __( 'The installed file matches the local baseline hash.', 'diffverity' ) : __( 'The installed file matches an accepted authoritative source checksum.', 'diffverity' ),
+					$baseline ? __( 'The installed file matches the local baseline hash.', 'diffverity-file-integrity-source-diff' ) : __( 'The installed file matches an accepted authoritative source checksum.', 'diffverity-file-integrity-source-diff' ),
 					array(
 						'local_hash'   => $local_hash,
 						'trusted_hash' => strtolower( (string) $trusted_hash ),
@@ -60,7 +60,7 @@ final class File_Classifier {
 			return $this->result(
 				'Verified',
 				'informational',
-				__( 'The installed file exactly matches the file in the official exact-version WordPress.org package.', 'diffverity' ),
+				__( 'The installed file exactly matches the file in the official exact-version WordPress.org package.', 'diffverity-file-integrity-source-diff' ),
 				array(
 					'trust_source' => 'Official Source Available',
 					'local_hash'   => $local['hash'],
@@ -78,9 +78,9 @@ final class File_Classifier {
 			return $this->result(
 				'Verified',
 				'informational',
-				__( 'The installed file matches an official WordPress core-bundled copy. Core updates can preserve an earlier official wp-content variant whose bytes differ from the separately published component package.', 'diffverity' ),
+				__( 'The installed file matches an official WordPress core-bundled copy. Core updates can preserve an earlier official wp-content variant whose bytes differ from the separately published component package.', 'diffverity-file-integrity-source-diff' ),
 				array(
-					'trust_source' => 'Official Core Bundle',
+					'trust_source'   => 'Official Core Bundle',
 					'source_version' => (string) $bundled_hashes[ $matched_bundle_hash ],
 					'local_hash'     => $local['md5'],
 					'trusted_hash'   => $matched_bundle_hash,
@@ -96,13 +96,13 @@ final class File_Classifier {
 					'trusted_size' => isset( $trusted['package_size'] ) ? (int) $trusted['package_size'] : 0,
 				);
 			}
-			return $this->result( 'Soft Difference', 'review', __( 'Raw bytes differ, but normalized text is equivalent. The difference is limited to a UTF-8 BOM or line endings.', 'diffverity' ), $evidence );
+			return $this->result( 'Soft Difference', 'review', __( 'Raw bytes differ, but normalized text is equivalent. The difference is limited to a UTF-8 BOM or line endings.', 'diffverity-file-integrity-source-diff' ), $evidence );
 		}
 		if ( ! $baseline && ! empty( $trusted['preferred_bundle_hash'] ) && ! empty( $trusted['preferred_bundle_version'] ) ) {
 			return $this->result(
 				'Modified',
 				'important',
-				__( 'The installed file differs from the official core-bundled copy identified for this component. View the diff to inspect the remaining local change.', 'diffverity' ),
+				__( 'The installed file differs from the official core-bundled copy identified for this component. View the diff to inspect the remaining local change.', 'diffverity-file-integrity-source-diff' ),
 				array(
 					'trust_source'   => 'Official Core Bundle',
 					'source_version' => $trusted['preferred_bundle_version'],
@@ -110,7 +110,7 @@ final class File_Classifier {
 				)
 			);
 		}
-		return $this->result( $baseline ? 'Baseline Changed' : 'Modified', 'important', __( 'The installed file exists in the comparison source, but its content differs. Legitimate customization, deployment tooling, an incomplete update, unintended modification, or compromise can cause this; DiffVerity cannot determine intent from the difference alone.', 'diffverity' ) );
+		return $this->result( $baseline ? 'Baseline Changed' : 'Modified', 'important', __( 'The installed file exists in the comparison source, but its content differs. Legitimate customization, deployment tooling, an incomplete update, unintended modification, or compromise can cause this; DiffVerity cannot determine intent from the difference alone.', 'diffverity-file-integrity-source-diff' ) );
 	}
 
 	/**

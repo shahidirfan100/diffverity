@@ -1,10 +1,10 @@
 === DiffVerity – File Integrity & Source Diff ===
-Contributors: shahidirfan
+Contributors: shahidirfan100
 Tags: file integrity, checksum, source diff, modified files, plugin integrity
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.4
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Verify core, plugin, and theme files and inspect exact changes against trusted s
 
 == Description ==
 
-DiffVerity is a focused integrity investigation and controlled restoration tool. It answers what changed, where it changed, what comparison source was used, and whether that source is independently authoritative.
+DiffVerity is a focused, read-only integrity investigation tool. It answers what changed, where it changed, what comparison source was used, and whether that source is independently authoritative.
 
 It does not claim that a changed file is malware, and it does not claim that an unchanged installation is secure. File differences can result from legitimate customization, deployment tooling, an incomplete update, unintended modification, or compromise.
 
@@ -30,7 +30,6 @@ It does not claim that a changed file is malware, and it does not claim that an 
 * Shows hashes and sizes instead of attempting line diffs for binaries or large files.
 * Runs on demand in resumable, resource-bounded admin batches with cancellation and scan locking.
 * Scans all components or one selected WordPress core, plugin, or theme component.
-* Restores eligible modified, missing, or Soft Difference files from the exact installed-version WordPress.org package after explicit confirmation.
 * Stores capped scan history and baseline history in dedicated, indexed tables.
 * Exports JSON, CSV, and text reports without full source code or absolute server paths.
 * Adds no frontend assets, telemetry, analytics, tracking, firewall, automated repair, or malware claims.
@@ -41,7 +40,7 @@ It does not claim that a changed file is malware, and it does not claim that an 
 
 **Official Source Available** means DiffVerity retrieved an authoritative exact-version WordPress.org package and generated a comparison manifest.
 
-**Official Core Bundle** means the file matches a checksum from a current or recent official WordPress distribution. WordPress can change default-theme metadata or bundled plugin code without changing the component's own version, and core updates preserve existing wp-content files. DiffVerity records the originating WordPress bundle version for exact evidence, diffs, and restoration.
+**Official Core Bundle** means the file matches a checksum from a current or recent official WordPress distribution. WordPress can change default-theme metadata or bundled plugin code without changing the component's own version, and core updates preserve existing wp-content files. DiffVerity records the originating WordPress bundle version for exact evidence and diffs.
 
 **Local Baseline** means an administrator deliberately recorded local SHA-256 hashes. Local baselines prove that files changed after the baseline was created. They do not prove that the baseline itself was clean or authentic.
 
@@ -51,22 +50,22 @@ It does not claim that a changed file is malware, and it does not claim that an 
 
 == External services ==
 
-DiffVerity contacts WordPress.org only when an administrator runs a scan, requests an exact source diff, or explicitly restores an eligible file.
+DiffVerity contacts WordPress.org only when an administrator runs a scan or requests an exact source diff.
 
 * `api.wordpress.org` is used to request checksums for the installed WordPress version/locale and, only when a bundled component header matches neither the component package nor the current bundle, a bounded newest-to-oldest set of recent WordPress minor releases.
 * `downloads.wordpress.org/plugin-checksums/` is used to request eligible plugin checksums for the exact installed slug and version.
 * `downloads.wordpress.org/plugins/`, `downloads.wordpress.org/theme/`, and `downloads.wordpress.org/release/` are used to retrieve exact-version packages when package comparison or original-line display is needed.
-* `core.svn.wordpress.org` is used only for an administrator-requested diff or restoration of a core-bundled plugin/theme file. DiffVerity retrieves that one file from the recorded WordPress tag instead of downloading the complete WordPress release archive.
+* `core.svn.wordpress.org` is used only for an administrator-requested diff of a core-bundled plugin/theme file. DiffVerity retrieves that one file from the recorded WordPress tag instead of downloading the complete WordPress release archive.
 
 Requests send the component slug/version or WordPress version/locale, a DiffVerity user-agent, and the site URL included in that user-agent. DiffVerity does not send local source code, database content, customer information, admin usernames, or site content. Requests use HTTPS with certificate verification. Redirects to unrelated hosts are not followed.
 
-Checksum-verified single-file source responses are cached under the server's private temporary directory for up to six hours to make repeated diff and restore actions fast. Cache filenames are hashes, cached files use a non-executable `.source` extension and restrictive permissions, and stale entries are removed automatically.
+Checksum-verified single-file source responses are cached under the server's private temporary directory for up to six hours to make repeated diff actions fast. Cache filenames are hashes, cached files use a non-executable `.source` extension and restrictive permissions, and stale entries are removed automatically.
 
 WordPress.org privacy policy: https://wordpress.org/about/privacy/
 
 == Installation ==
 
-1. Upload the `diffverity` folder to `/wp-content/plugins/`, or install the ZIP through Plugins > Add New > Upload Plugin.
+1. Upload the `diffverity-file-integrity-source-diff` folder to `/wp-content/plugins/`, or install the ZIP through Plugins > Add New > Upload Plugin.
 2. Activate DiffVerity.
 3. Open DiffVerity > Scan.
 4. Choose all components or one specific core, plugin, or theme target, then select **Run Integrity Scan**.
@@ -90,15 +89,15 @@ A Local Baseline is an administrator-created set of SHA-256 hashes and file meta
 
 = Can DiffVerity verify premium plugins? =
 
-It cannot independently verify a private vendor source in version 1.1. You can create a Local Baseline to monitor later changes. That result remains clearly labeled as a baseline comparison.
+It cannot independently verify a private vendor source. You can create a Local Baseline to monitor later changes. That result remains clearly labeled as a baseline comparison.
 
-= Can DiffVerity restore a changed file? =
+= Can DiffVerity repair or delete changed files? =
 
-Yes, when the scan recorded a Modified, Missing, or Soft Difference file against an official source. After administrator confirmation, version 1.1 downloads the exact installed-version package from WordPress.org, verifies the source against the stored checksum, rejects unsafe paths and symlinks, and atomically replaces that one file. It never deletes Unexpected files, restores Local Baselines, performs bulk automatic repair, or treats an old scan as current after a component version changes.
+No. DiffVerity is read-only and does not modify WordPress core, plugin, or theme files. Use the evidence report to investigate, then use WordPress's normal update or reinstall tools if you decide a component should be replaced.
 
 = Does it upload my source code? =
 
-No. Source code is read locally for hashing, optional display, and administrator-requested restoration checks. It is not uploaded to a DiffVerity service; no such service exists in version 1.1.
+No. Source code is read locally for hashing and optional display. It is not uploaded to a DiffVerity service; no such service exists.
 
 = Why does a plugin show as unverified? =
 
@@ -118,16 +117,7 @@ A baseline belongs to one recorded component version. DiffVerity does not automa
 
 = Does it scan uploads? =
 
-No. Version 1.1 scans only WordPress core, plugins, and themes. It does not recurse through uploads or arbitrary server directories.
-
-== Screenshots ==
-
-1. Integrity overview with measurable file counts and explicit trust labels.
-2. Modified, missing, unexpected, and unavailable file evidence.
-3. Escaped exact-version source diff.
-4. Local Baseline creation and retained history.
-5. Bounded scan history and current-versus-previous comparison.
-6. Component file evidence and report actions.
+No. DiffVerity scans only WordPress core, plugins, and themes. It does not recurse through uploads or arbitrary server directories.
 
 == Privacy ==
 
@@ -139,16 +129,28 @@ File integrity does not measure overall website security. An official package ca
 
 Local Baselines retain hashes and metadata rather than full source copies, so original-line diffs are unavailable for baseline-only changes.
 
-Restoration requires a writable destination and an exact-version package still available from WordPress.org. Scan history is immutable, so run a new scan after restoration to confirm the current state. DiffVerity deliberately does not delete Unexpected files because those files may be legitimate local additions.
+DiffVerity does not repair or delete files. It deliberately keeps investigation separate from remediation because changed files may be legitimate local additions or customizations.
 
 == Changelog ==
 
+= 1.2.1 =
+
+* Fixed history comparisons so every result is processed in bounded pages instead of stopping after 500 files.
+* Streamed complete JSON, CSV, and text exports without loading the entire scan into memory.
+* Added paginated file results so scans larger than 500 files remain fully accessible.
+* Added stable result ordering and protected CSV fields from spreadsheet-formula interpretation.
+
+= 1.2.0 =
+
+* Removed all file-repair actions so the plugin remains read-only and never writes to WordPress core, plugin, or theme directories.
+* Changed the text domain to match the assigned WordPress.org plugin slug.
+* Corrected the WordPress.org contributor username.
+
 = 1.1.4 =
 
-* Fixed false Soft Difference and restore-checksum failures when WordPress.org publishes multiple accepted hashes for one plugin file.
+* Fixed false Soft Difference results when WordPress.org publishes multiple accepted hashes for one plugin file.
 * Preserved every official MD5 or SHA-256 variant returned by the plugin checksum service instead of coercing checksum arrays to a single invalid value.
-* Made restoration compatible with older affected scan rows by requiring the downloaded exact-version package file to match one of the currently accepted official checksums.
-* Recorded exact official-package hashes for normalized comparisons so Soft Difference restoration verifies the same bytes it will install.
+* Recorded the matching official checksum variant in scan evidence.
 
 = 1.1.3 =
 
@@ -156,15 +158,14 @@ Restoration requires a writable destination and an exact-version package still a
 * Added bounded historical core-bundle checksum matching for recent WordPress minor releases.
 * Verified Twenty Twenty-Three 1.6 variants from WordPress 6.7, 6.8, 6.9, and 7.0 without treating compatibility-header changes as local modifications.
 * Verified the official Hello Dolly `die();` variant bundled with WordPress 6.8 through 7.0.
-* Replaced full WordPress ZIP downloads for core-bundle diffs/restores with one checksum-verified source-file request.
-* Added a private six-hour verified source cache so a restore after viewing a diff does not repeat the request.
+* Replaced full WordPress ZIP downloads for core-bundle diffs with one checksum-verified source-file request.
+* Added a private six-hour verified source cache so repeated diff views do not repeat the request.
 * Recorded the originating WordPress source version in scan evidence and exports.
 
 = 1.1.2 =
 
 * Fixed core-bundle verification for an individual file when another file in the bundled plugin or theme was locally customized.
 * Compared modified bundled components, including Hello Dolly, with the exact WordPress-release copy so the diff shows only the remaining local changes.
-* Added core-bundle restore support with stale WordPress-version protection.
 * Added clickable latest-scan components on Overview and clickable component names in Changes.
 
 = 1.1.1 =
@@ -177,8 +178,6 @@ Restoration requires a writable destination and an exact-version package still a
 = 1.1.0 =
 
 * Added a scan-target selector for all components, WordPress core, or one installed plugin or theme.
-* Added explicit per-file restoration from exact installed-version WordPress.org packages for eligible official-source differences.
-* Added stale-scan, source-checksum, path-containment, symlink, writability, and final-checksum restore protections.
 * Fixed settings sanitization warnings for excluded components and paths.
 * Reworked custom-table identifiers and documented unavoidable owned-table queries for clean standards analysis.
 
@@ -192,3 +191,9 @@ Restoration requires a writable destination and an exact-version package still a
 * Added escaped text diffs and safe metadata-only handling for binary and large files.
 * Added bounded AJAX scan batches, locking, cancellation, history, filters, and JSON/CSV/TXT exports.
 * Added controlled exclusions, conservative resource limits, multisite-safe capability checks, and opt-in uninstall cleanup.
+
+== Upgrade Notice ==
+
+= 1.2.1 =
+
+This is the initial stable release of DiffVerity, with bounded large-scan history and export handling, paginated file results, stable result ordering, and protected CSV fields.

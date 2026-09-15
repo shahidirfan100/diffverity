@@ -83,9 +83,85 @@ final class Results_Repository {
 		}
 		$args[] = max( 1, min( 500, $limit ) );
 		$args[] = max( 0, $offset );
-		$sql    = 'SELECT * FROM %i WHERE ' . implode( ' AND ', $where ) . " ORDER BY FIELD(status,'Modified','Missing','Unexpected','Baseline Changed','Baseline Missing','Baseline Added','Soft Difference','Source Unavailable','Skipped','Verified'), component_name, relative_path LIMIT %d OFFSET %d";
+		$sql    = 'SELECT * FROM %i WHERE ' . implode( ' AND ', $where ) . " ORDER BY FIELD(status,'Modified','Missing','Unexpected','Baseline Changed','Baseline Missing','Baseline Added','Soft Difference','Source Unavailable','Skipped','Verified'), component_name, relative_path, id LIMIT %d OFFSET %d";
 		array_unshift( $args, $table );
 		return $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Bounded report query on an owned table; identifier and values are prepared.
+	}
+
+	/**
+	 * Iterates every matching result in bounded database pages.
+	 *
+	 * Completed scan results are immutable, so offset pagination is stable for
+	 * history comparisons and exports without loading the full scan into memory.
+	 *
+	 * @param int    $scan_id Scan ID.
+	 * @param string $status Optional status.
+	 * @param string $type Optional component type.
+	 * @param string $component Optional component slug.
+	 * @param int    $page_size Bounded database page size.
+	 * @return \Generator<int,array<string,mixed>>
+	 */
+	public function iterate( $scan_id, $status = '', $type = '', $component = '', $page_size = 500 ) {
+		$page_size = max( 1, min( 500, (int) $page_size ) );
+		$offset    = 0;
+
+		do {
+			$rows      = $this->query( $scan_id, $status, $type, $page_size, $offset, $component );
+			$row_count = count( $rows );
+			foreach ( $rows as $row ) {
+				yield $row;
+			}
+			$offset += $row_count;
+		} while ( $row_count === $page_size );
+	}
+
+	/**
+	 * Counts results using the same fixed filters as query().
+	 *
+	 * @param int    $scan_id Scan ID.
+	 * @param string $status Optional status.
+	 * @param string $type Optional component type.
+	 * @param string $component Optional component slug.
+	 * @return int
+	 */
+	public function count_filtered( $scan_id, $status = '', $type = '', $component = '' ) {
+		global $wpdb;
+		$table = Database::table( 'results' );
+		$where = array( 'scan_id = %d' );
+		$args  = array( $scan_id );
+		if ( $status ) {
+			$where[] = 'status = %s';
+			$args[]  = $status;
+		}
+		if ( $type ) {
+			$where[] = 'component_type = %s';
+			$args[]  = $type;
+		}
+		if ( $component ) {
+			$where[] = 'component_slug = %s';
+			$args[]  = $component;
+		}
+		$sql = 'SELECT COUNT(*) FROM %i WHERE ' . implode( ' AND ', $where );
+		array_unshift( $args, $table );
+		return (int) $wpdb->get_var( $wpdb->prepare( $sql, $args ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Exact count on an owned table; identifier and values are prepared.
+	}
+
+	/**
+	 * Returns the complete set of non-verified result identities for one scan.
+	 *
+	 * @param int $scan_id Scan ID.
+	 * @return array<string,bool>
+	 */
+	public function difference_identities( $scan_id ) {
+		$set = array();
+		foreach ( $this->iterate( $scan_id ) as $row ) {
+			if ( in_array( $row['status'], array( 'Verified', 'Skipped' ), true ) ) {
+				continue;
+			}
+			$key         = $row['component_type'] . '|' . $row['component_slug'] . '|' . $row['relative_path'] . '|' . $row['status'];
+			$set[ $key ] = true;
+		}
+		return $set;
 	}
 
 	/**
@@ -97,16 +173,9 @@ final class Results_Repository {
 	public function component_summaries( $scan_id ) {
 		global $wpdb;
 		$table = Database::table( 'results' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Intentional bounded read from the plugin-owned results table; scan results must be current.
-		return $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT component_type, component_slug, component_name, component_version, COUNT(*) AS total_files, SUM(CASE WHEN status IN ('Modified','Missing','Unexpected','Baseline Changed','Baseline Missing','Baseline Added','Soft Difference') THEN 1 ELSE 0 END) AS differences FROM %i WHERE scan_id = %d GROUP BY component_type, component_slug, component_name, component_version ORDER BY component_type, component_name LIMIT 500",
-				$table,
-				$scan_id
-			),
-			ARRAY_A
-		);
-
+		$sql   = "SELECT component_type, component_slug, component_name, component_version, COUNT(*) AS total_files, SUM(CASE WHEN status IN ('Modified','Missing','Unexpected','Baseline Changed','Baseline Missing','Baseline Added','Soft Difference') THEN 1 ELSE 0 END) AS differences FROM %i WHERE scan_id = %d GROUP BY component_type, component_slug, component_name, component_version ORDER BY component_type, component_name";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Fixed query on an owned table; the identifier and scan ID are prepared.
+		return $wpdb->get_results( $wpdb->prepare( $sql, $table, $scan_id ), ARRAY_A );
 	}
 
 	/**

@@ -47,7 +47,7 @@ final class Capabilities {
 	 */
 	public static function enforce() {
 		if ( ! self::current_user_can_manage() ) {
-			wp_die( esc_html__( 'You are not allowed to access DiffVerity integrity data.', 'diffverity' ), 403 );
+			wp_die( esc_html__( 'You are not allowed to access DiffVerity integrity data.', 'diffverity-file-integrity-source-diff' ), 403 );
 		}
 	}
 }

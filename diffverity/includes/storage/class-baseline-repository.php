@@ -28,11 +28,11 @@ final class Baseline_Repository {
 	public function create( array $component ) {
 		global $wpdb;
 		if ( ! in_array( $component['type'], array( 'plugin', 'theme' ), true ) ) {
-			return new \WP_Error( 'diffverity_invalid_baseline_type', __( 'Only plugins and themes can have local baselines.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_invalid_baseline_type', __( 'Only plugins and themes can have local baselines.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$manifest = ( new Manifest_Builder() )->build( $component['root'], Plugin::settings(), false );
 		if ( ! $manifest ) {
-			return new \WP_Error( 'diffverity_empty_baseline', __( 'No readable files were found for this component.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_empty_baseline', __( 'No readable files were found for this component.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$table = Database::table( 'baselines' );
 		$files = Database::table( 'baseline_files' );
@@ -62,7 +62,7 @@ final class Baseline_Repository {
 		);
 		if ( false === $inserted ) {
 			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic owned-table write.
-			return new \WP_Error( 'diffverity_baseline_insert', __( 'The local baseline could not be stored.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_baseline_insert', __( 'The local baseline could not be stored.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$baseline_id = (int) $wpdb->insert_id;
 		foreach ( $manifest as $path => $metadata ) {
@@ -83,7 +83,7 @@ final class Baseline_Repository {
 			);
 			if ( false === $ok ) {
 				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic owned-table write.
-				return new \WP_Error( 'diffverity_baseline_file_insert', __( 'A baseline file hash could not be stored.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_baseline_file_insert', __( 'A baseline file hash could not be stored.', 'diffverity-file-integrity-source-diff' ) );
 			}
 		}
 		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic owned-table write.

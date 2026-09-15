@@ -65,52 +65,6 @@ final class Path_Guard {
 	}
 
 	/**
-	 * Resolves a safe file destination, creating only contained directories.
-	 *
-	 * Existing symlinks and non-directory parent segments are rejected. The
-	 * returned path may identify either an existing regular file or a new file.
-	 *
-	 * @param string $root Root directory.
-	 * @param string $relative Relative path.
-	 * @return string|false
-	 */
-	public static function resolve_write_target( $root, $relative ) {
-		$relative  = self::normalize_relative( $relative );
-		$root_real = realpath( $root );
-		if ( '' === $relative || false === $root_real || ! is_dir( $root_real ) ) {
-			return false;
-		}
-
-		$parts = explode( '/', $relative );
-		$file  = array_pop( $parts );
-		if ( '' === $file ) {
-			return false;
-		}
-
-		$parent = $root_real;
-		foreach ( $parts as $part ) {
-			$next = $parent . DIRECTORY_SEPARATOR . $part;
-			if ( is_link( $next ) || ( file_exists( $next ) && ! is_dir( $next ) ) ) {
-				return false;
-			}
-			if ( ! file_exists( $next ) && ! wp_mkdir_p( $next ) ) {
-				return false;
-			}
-			$next_real = realpath( $next );
-			if ( false === $next_real || ! self::inside( $root_real, $next_real ) ) {
-				return false;
-			}
-			$parent = $next_real;
-		}
-
-		$target = $parent . DIRECTORY_SEPARATOR . $file;
-		if ( is_link( $target ) || ( file_exists( $target ) && ! is_file( $target ) ) ) {
-			return false;
-		}
-		return self::inside( $root_real, $parent ) || $root_real === $parent ? $target : false;
-	}
-
-	/**
 	 * Checks containment using path-segment boundaries.
 	 *
 	 * @param string $root Root path.

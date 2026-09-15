@@ -50,7 +50,7 @@ abstract class Package_Source implements Source_Provider_Interface {
 	public function materialize( array $component ) {
 		$temp = Temp_Manager::create_directory();
 		if ( false === $temp ) {
-			return new \WP_Error( 'diffverity_temp_failed', __( 'A secure temporary directory could not be created.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_temp_failed', __( 'A secure temporary directory could not be created.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$zip = $this->client->download_package( $this->package_url( $component ), $temp );
 		if ( is_wp_error( $zip ) ) {
@@ -59,14 +59,14 @@ abstract class Package_Source implements Source_Provider_Interface {
 		}
 		if ( ! $this->archive_entries_are_safe( $zip ) ) {
 			Temp_Manager::remove_directory( $temp );
-			return new \WP_Error( 'diffverity_unsafe_archive', __( 'The official package contains an unsafe archive path.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_unsafe_archive', __( 'The official package contains an unsafe archive path.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		WP_Filesystem();
 		$extract = trailingslashit( $temp ) . 'source';
 		if ( ! wp_mkdir_p( $extract ) ) {
 			Temp_Manager::remove_directory( $temp );
-			return new \WP_Error( 'diffverity_extract_directory', __( 'The package extraction directory could not be created.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_extract_directory', __( 'The package extraction directory could not be created.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$result = unzip_file( $zip, $extract );
 		if ( is_wp_error( $result ) ) {
@@ -76,7 +76,7 @@ abstract class Package_Source implements Source_Provider_Interface {
 		$source_root = $this->find_package_root( $extract, $component );
 		if ( false === $source_root || ! Path_Guard::inside( $extract, $source_root ) ) {
 			Temp_Manager::remove_directory( $temp );
-			return new \WP_Error( 'diffverity_package_layout', __( 'The official package has an unexpected directory layout.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_package_layout', __( 'The official package has an unexpected directory layout.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		return array(
 			'temp_root'   => $temp,

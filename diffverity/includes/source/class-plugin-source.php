@@ -28,7 +28,7 @@ final class Plugin_Source extends Package_Source {
 			return $data;
 		}
 		if ( empty( $data['files'] ) || ! is_array( $data['files'] ) ) {
-			return new \WP_Error( 'diffverity_plugin_checksums_malformed', __( 'The plugin checksum response does not contain a file manifest.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_plugin_checksums_malformed', __( 'The plugin checksum response does not contain a file manifest.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$files     = array();
 		$algorithm = 'md5';
@@ -82,7 +82,7 @@ final class Plugin_Source extends Package_Source {
 				continue;
 			}
 			$checksum = strtolower( trim( (string) $checksum ) );
-			if ( $length === strlen( $checksum ) && ctype_xdigit( $checksum ) ) {
+			if ( strlen( $checksum ) === $length && ctype_xdigit( $checksum ) ) {
 				$valid[] = $checksum;
 			}
 		}

@@ -33,22 +33,22 @@ final class Diff_Engine {
 	 */
 	public function compare( array $result ) {
 		if ( 'Local Baseline' === $result['trust_source'] ) {
-			return new \WP_Error( 'diffverity_baseline_no_source', __( 'Local baselines store hashes and metadata, not source-code copies. An original-line diff is therefore unavailable.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_baseline_no_source', __( 'Local baselines store hashes and metadata, not source-code copies. An original-line diff is therefore unavailable.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$component = ( new Component_Registry() )->resolve( $result['component_type'], $result['component_slug'] );
 		if ( false === $component ) {
-			return new \WP_Error( 'diffverity_component_missing', __( 'The component is no longer installed at the scanned location.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_component_missing', __( 'The component is no longer installed at the scanned location.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( $component['version'] !== $result['component_version'] ) {
-			return new \WP_Error( 'diffverity_version_changed', __( 'The installed component version changed after this scan. Run a new scan before viewing source differences.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_version_changed', __( 'The installed component version changed after this scan. Run a new scan before viewing source differences.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		if ( 'Official Core Bundle' === $result['trust_source'] ) {
 			if ( empty( $result['source_version'] ) ) {
-				return new \WP_Error( 'diffverity_bundle_source_version_missing', __( 'This older scan did not record the originating WordPress bundle version. Run a new scan before viewing this difference.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_bundle_source_version_missing', __( 'This older scan did not record the originating WordPress bundle version. Run a new scan before viewing this difference.', 'diffverity-file-integrity-source-diff' ) );
 			}
 			$scan = ( new History_Repository() )->get( (int) $result['scan_id'] );
 			if ( false === $scan || (string) get_bloginfo( 'version' ) !== (string) $scan['wp_version'] ) {
-				return new \WP_Error( 'diffverity_core_version_changed', __( 'The WordPress version changed after this scan. Run a new scan before viewing a core-bundle difference.', 'diffverity' ) );
+				return new \WP_Error( 'diffverity_core_version_changed', __( 'The WordPress version changed after this scan. Run a new scan before viewing a core-bundle difference.', 'diffverity-file-integrity-source-diff' ) );
 			}
 		}
 		$settings = Plugin::settings();
@@ -71,19 +71,19 @@ final class Diff_Engine {
 			$source_path = $result['relative_path'];
 		}
 		try {
-			$local    = File_Reader::contents( $component['root'], $result['relative_path'], $limit );
-			$trusted  = File_Reader::contents( $source_root, $source_path, $limit );
+			$local   = File_Reader::contents( $component['root'], $result['relative_path'], $limit );
+			$trusted = File_Reader::contents( $source_root, $source_path, $limit );
 			if ( false === $local || false === $trusted ) {
 				return array(
 					'kind'    => 'metadata',
-					'message' => __( 'The file differs, but line diff is unavailable because a file is missing, unreadable, binary-sized, or exceeds the configured diff limit.', 'diffverity' ),
+					'message' => __( 'The file differs, but line diff is unavailable because a file is missing, unreadable, binary-sized, or exceeds the configured diff limit.', 'diffverity-file-integrity-source-diff' ),
 					'result'  => $result,
 				);
 			}
 			if ( ! File_Reader::is_text( $local ) || ! File_Reader::is_text( $trusted ) ) {
 				return array(
 					'kind'    => 'binary',
-					'message' => __( 'Binary files are compared by hash and size; their bytes are never rendered as HTML.', 'diffverity' ),
+					'message' => __( 'Binary files are compared by hash and size; their bytes are never rendered as HTML.', 'diffverity-file-integrity-source-diff' ),
 					'result'  => $result,
 				);
 			}
@@ -94,15 +94,15 @@ final class Diff_Engine {
 				$trusted_for_diff,
 				$local_for_diff,
 				array(
-					'title_left'      => __( 'Original / Trusted Source', 'diffverity' ),
-					'title_right'     => __( 'Local File', 'diffverity' ),
+					'title_left'      => __( 'Original / Trusted Source', 'diffverity-file-integrity-source-diff' ),
+					'title_right'     => __( 'Local File', 'diffverity-file-integrity-source-diff' ),
 					'show_split_view' => true,
 				)
 			);
 			if ( '' === trim( (string) $diff ) && ! hash_equals( hash( 'sha256', $trusted ), hash( 'sha256', $local ) ) ) {
 				return array(
 					'kind'    => 'metadata',
-					'message' => __( 'The byte hashes differ, but WordPress could not render a visible line-level change. This commonly indicates whitespace, encoding, line-termination, or a single-line minified-file difference. The hash evidence remains valid; use the recorded hashes or restore the official source if appropriate.', 'diffverity' ),
+					'message' => __( 'The byte hashes differ, but WordPress could not render a visible line-level change. This commonly indicates whitespace, encoding, line-termination, or a single-line minified-file difference. The recorded hash evidence remains valid.', 'diffverity-file-integrity-source-diff' ),
 					'result'  => $result,
 				);
 			}

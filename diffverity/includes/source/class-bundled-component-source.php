@@ -37,10 +37,10 @@ final class Bundled_Component_Source {
 
 		$core_version = get_bloginfo( 'version' );
 		$locale       = get_locale();
-		$prefix      = $this->component_prefix( $component );
-		$header_file = 'theme' === $component['type'] ? 'style.css' : $component['main_file'];
-		$versions    = array();
-		$current     = $this->version_hashes( $core_version, $locale, $prefix );
+		$prefix       = $this->component_prefix( $component );
+		$header_file  = 'theme' === $component['type'] ? 'style.css' : $component['main_file'];
+		$versions     = array();
+		$current      = $this->version_hashes( $core_version, $locale, $prefix );
 		if ( $current ) {
 			$versions[ $core_version ] = $current;
 		}
@@ -101,8 +101,8 @@ final class Bundled_Component_Source {
 	/**
 	 * Checks whether the installed component header matches one core release.
 	 *
-	 * @param array<string,string>               $hashes Component hashes.
-	 * @param string                             $header_file Header path.
+	 * @param array<string,string>              $hashes Component hashes.
+	 * @param string                            $header_file Header path.
 	 * @param array<string,array<string,mixed>> $local Local manifest.
 	 * @return bool
 	 */
@@ -125,7 +125,7 @@ final class Bundled_Component_Source {
 		$major    = (int) $matches[1];
 		$minor    = (int) $matches[2];
 		$versions = array();
-		while ( count( $versions ) < 6 ) {
+		for ( $attempt = 0; $attempt < 6; ++$attempt ) {
 			$candidate = $major . '.' . $minor;
 			if ( version_compare( $candidate, '6.2', '<' ) ) {
 				break;
@@ -151,19 +151,19 @@ final class Bundled_Component_Source {
 	 * @return string|\WP_Error
 	 */
 	public function get_source_file( array $component, $path, $source_version, $expected_hash, $max_bytes ) {
-		$path            = Path_Guard::normalize_relative( $path );
-		$source_version  = trim( (string) $source_version );
-		$expected_hash   = strtolower( trim( (string) $expected_hash ) );
-		$hash_algorithm  = 32 === strlen( $expected_hash ) ? 'md5' : ( 64 === strlen( $expected_hash ) ? 'sha256' : '' );
-		$component_path  = $this->component_prefix( $component ) . $path;
-		$max_bytes       = max( 1, min( (int) Plugin::settings()['max_package_bytes'], (int) $max_bytes ) );
+		$path           = Path_Guard::normalize_relative( $path );
+		$source_version = trim( (string) $source_version );
+		$expected_hash  = strtolower( trim( (string) $expected_hash ) );
+		$hash_algorithm = 32 === strlen( $expected_hash ) ? 'md5' : ( 64 === strlen( $expected_hash ) ? 'sha256' : '' );
+		$component_path = $this->component_prefix( $component ) . $path;
+		$max_bytes      = max( 1, min( (int) Plugin::settings()['max_package_bytes'], (int) $max_bytes ) );
 		if ( '' === $path || ! preg_match( '/^\d+\.\d+(?:\.\d+)?$/', $source_version ) || '' === $hash_algorithm || ! ctype_xdigit( $expected_hash ) ) {
-			return new \WP_Error( 'diffverity_bundle_source_invalid', __( 'The stored core-bundle source evidence is invalid.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_bundle_source_invalid', __( 'The stored core-bundle source evidence is invalid.', 'diffverity-file-integrity-source-diff' ) );
 		}
 
 		$cache_dir = trailingslashit( get_temp_dir() ) . 'diffverity-source-cache';
 		if ( ! wp_mkdir_p( $cache_dir ) || false === realpath( $cache_dir ) ) {
-			return new \WP_Error( 'diffverity_bundle_cache_unavailable', __( 'A protected source-file cache could not be prepared.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_unavailable', __( 'A protected source-file cache could not be prepared.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		chmod( $cache_dir, 0700 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Restricts the private temporary cache.
 		self::cleanup_source_cache( 6 * HOUR_IN_SECONDS );
@@ -175,7 +175,7 @@ final class Bundled_Component_Source {
 
 		$staging = tempnam( $cache_dir, '.diffverity-' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_tempnam -- Same-directory staging prevents partial cache entries.
 		if ( ! $staging ) {
-			return new \WP_Error( 'diffverity_bundle_cache_stage', __( 'The official source file could not be staged.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_stage', __( 'The official source file could not be staged.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		$url      = 'https://core.svn.wordpress.org/tags/' . rawurlencode( $source_version ) . '/' . implode( '/', array_map( 'rawurlencode', explode( '/', $component_path ) ) );
 		$download = ( new WordPress_Org_Client() )->download_source_file( $url, $staging, $max_bytes );
@@ -183,12 +183,12 @@ final class Bundled_Component_Source {
 			if ( is_file( $staging ) ) {
 				wp_delete_file( $staging );
 			}
-			return is_wp_error( $download ) ? $download : new \WP_Error( 'diffverity_bundle_source_hash', __( 'The retrieved official source file did not match its recorded WordPress checksum.', 'diffverity' ) );
+			return is_wp_error( $download ) ? $download : new \WP_Error( 'diffverity_bundle_source_hash', __( 'The retrieved official source file did not match its recorded WordPress checksum.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		chmod( $staging, 0600 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Restricts cached source bytes.
 		if ( ! rename( $staging, $cache_file ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Atomic same-directory cache replacement.
 			wp_delete_file( $staging );
-			return new \WP_Error( 'diffverity_bundle_cache_commit', __( 'The verified official source file could not be cached.', 'diffverity' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_commit', __( 'The verified official source file could not be cached.', 'diffverity-file-integrity-source-diff' ) );
 		}
 		return $cache_file;
 	}
@@ -224,7 +224,7 @@ final class Bundled_Component_Source {
 	/**
 	 * Removes stale private source-cache files.
 	 *
-	 * @param string $cache_dir Cache directory.
+	 * @param int $max_age Maximum cache age in seconds.
 	 * @return void
 	 */
 	public static function cleanup_source_cache( $max_age = 21600 ) {
