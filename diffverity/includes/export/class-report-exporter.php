@@ -28,11 +28,11 @@ final class Report_Exporter {
 	public function output( $scan_id, $format ) {
 		$scan = ( new History_Repository() )->get( $scan_id );
 		if ( false === $scan ) {
-			wp_die( esc_html__( 'Scan not found.', 'diffverity-file-integrity-source-diff' ), 404 );
+			wp_die( esc_html__( 'Scan not found.', 'diffverity' ), 404 );
 		}
 		$allowed = array( 'json', 'csv', 'txt' );
 		if ( ! in_array( $format, $allowed, true ) ) {
-			wp_die( esc_html__( 'Unsupported export format.', 'diffverity-file-integrity-source-diff' ), 400 );
+			wp_die( esc_html__( 'Unsupported export format.', 'diffverity' ), 400 );
 		}
 		$results  = new Results_Repository();
 		$filename = 'diffverity-scan-' . $scan_id . '.' . $format;

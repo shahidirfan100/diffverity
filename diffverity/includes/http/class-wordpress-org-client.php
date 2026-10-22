@@ -38,7 +38,7 @@ final class WordPress_Org_Client {
 			return $cached;
 		}
 		if ( ! $this->is_allowed_url( $url ) ) {
-			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The trusted-source host is not allowed.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The trusted-source host is not allowed.', 'diffverity' ) );
 		}
 		$settings = Plugin::settings();
 		$response = wp_safe_remote_get(
@@ -56,11 +56,11 @@ final class WordPress_Org_Client {
 		}
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code ) {
-			return new \WP_Error( 'diffverity_http_status', sprintf( /* translators: %d: HTTP status code. */ __( 'Trusted source returned HTTP %d.', 'diffverity-file-integrity-source-diff' ), $code ), array( 'status' => $code ) );
+			return new \WP_Error( 'diffverity_http_status', sprintf( /* translators: %d: HTTP status code. */ __( 'Trusted source returned HTTP %d.', 'diffverity' ), $code ), array( 'status' => $code ) );
 		}
 		$data = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $data ) || JSON_ERROR_NONE !== json_last_error() ) {
-			return new \WP_Error( 'diffverity_malformed_json', __( 'Trusted source returned a malformed response.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_malformed_json', __( 'Trusted source returned a malformed response.', 'diffverity' ) );
 		}
 		set_transient( $cache_key, $data, 6 * HOUR_IN_SECONDS );
 		return $data;
@@ -75,7 +75,7 @@ final class WordPress_Org_Client {
 	 */
 	public function download_package( $url, $directory ) {
 		if ( ! $this->is_allowed_url( $url ) ) {
-			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The package host is not allowed.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The package host is not allowed.', 'diffverity' ) );
 		}
 		$settings = Plugin::settings();
 		$file     = trailingslashit( $directory ) . 'source.zip';
@@ -96,11 +96,11 @@ final class WordPress_Org_Client {
 		}
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code || ! is_file( $file ) ) {
-			return new \WP_Error( 'diffverity_package_unavailable', sprintf( /* translators: %d: HTTP status code. */ __( 'Official package returned HTTP %d.', 'diffverity-file-integrity-source-diff' ), $code ), array( 'status' => $code ) );
+			return new \WP_Error( 'diffverity_package_unavailable', sprintf( /* translators: %d: HTTP status code. */ __( 'Official package returned HTTP %d.', 'diffverity' ), $code ), array( 'status' => $code ) );
 		}
 		$size = filesize( $file );
 		if ( false === $size || $size <= 0 || $size > (int) $settings['max_package_bytes'] ) {
-			return new \WP_Error( 'diffverity_package_size', __( 'The official package exceeds the configured size limit.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_package_size', __( 'The official package exceeds the configured size limit.', 'diffverity' ) );
 		}
 		return $file;
 	}
@@ -115,7 +115,7 @@ final class WordPress_Org_Client {
 	 */
 	public function download_source_file( $url, $destination, $max_bytes ) {
 		if ( ! $this->is_allowed_url( $url ) ) {
-			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The source-file host is not allowed.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_host_not_allowed', __( 'The source-file host is not allowed.', 'diffverity' ) );
 		}
 		$settings = Plugin::settings();
 		$response = wp_safe_remote_get(
@@ -139,7 +139,7 @@ final class WordPress_Org_Client {
 			if ( is_file( $destination ) ) {
 				wp_delete_file( $destination );
 			}
-			return new \WP_Error( 'diffverity_source_file_unavailable', sprintf( /* translators: %d: HTTP status code. */ __( 'Official source file returned HTTP %d or exceeded the size limit.', 'diffverity-file-integrity-source-diff' ), $code ), array( 'status' => $code ) );
+			return new \WP_Error( 'diffverity_source_file_unavailable', sprintf( /* translators: %d: HTTP status code. */ __( 'Official source file returned HTTP %d or exceeded the size limit.', 'diffverity' ), $code ), array( 'status' => $code ) );
 		}
 		return $destination;
 	}

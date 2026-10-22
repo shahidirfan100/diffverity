@@ -27,7 +27,7 @@ final class Component_Registry {
 		$components[] = array(
 			'type'    => 'core',
 			'slug'    => 'wordpress-core',
-			'name'    => __( 'WordPress Core', 'diffverity-file-integrity-source-diff' ),
+			'name'    => __( 'WordPress Core', 'diffverity' ),
 			'version' => get_bloginfo( 'version' ),
 			'root'    => ABSPATH,
 			'locale'  => get_locale(),

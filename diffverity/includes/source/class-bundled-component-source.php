@@ -41,6 +41,7 @@ final class Bundled_Component_Source {
 		$header_file  = 'theme' === $component['type'] ? 'style.css' : $component['main_file'];
 		$versions     = array();
 		$current      = $this->version_hashes( $core_version, $locale, $prefix );
+		$current      = $this->limit_entry_hashes( $current, $component );
 		if ( $current ) {
 			$versions[ $core_version ] = $current;
 		}
@@ -49,6 +50,7 @@ final class Bundled_Component_Source {
 		if ( '' === $preferred && ! $primary_header_match ) {
 			foreach ( array_slice( $this->candidate_versions( $core_version ), 1 ) as $candidate ) {
 				$hashes = $this->version_hashes( $candidate, $locale, $prefix );
+				$hashes = $this->limit_entry_hashes( $hashes, $component );
 				if ( $this->header_matches( $hashes, $header_file, $local ) ) {
 					$versions[ $candidate ] = $hashes;
 					$preferred              = $candidate;
@@ -61,6 +63,24 @@ final class Bundled_Component_Source {
 			'versions'          => $versions,
 			'preferred_version' => $preferred,
 		);
+	}
+
+	/**
+	 * Limits a root-level single-file plugin to its own entry file.
+	 *
+	 * Single-file plugins share the plugins directory, so its prefix also
+	 * contains every directory-based plugin installed beside the entry file.
+	 *
+	 * @param array<string,string> $hashes Component hashes.
+	 * @param array                $component Resolved component.
+	 * @return array<string,string>
+	 */
+	private function limit_entry_hashes( array $hashes, array $component ) {
+		if ( empty( $component['entry'] ) ) {
+			return $hashes;
+		}
+		$entry = str_replace( '\\', '/', ltrim( $component['entry'], '/' ) );
+		return isset( $hashes[ $entry ] ) ? array( $entry => $hashes[ $entry ] ) : array();
 	}
 
 	/**
@@ -158,12 +178,12 @@ final class Bundled_Component_Source {
 		$component_path = $this->component_prefix( $component ) . $path;
 		$max_bytes      = max( 1, min( (int) Plugin::settings()['max_package_bytes'], (int) $max_bytes ) );
 		if ( '' === $path || ! preg_match( '/^\d+\.\d+(?:\.\d+)?$/', $source_version ) || '' === $hash_algorithm || ! ctype_xdigit( $expected_hash ) ) {
-			return new \WP_Error( 'diffverity_bundle_source_invalid', __( 'The stored core-bundle source evidence is invalid.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_bundle_source_invalid', __( 'The stored core-bundle source evidence is invalid.', 'diffverity' ) );
 		}
 
 		$cache_dir = trailingslashit( get_temp_dir() ) . 'diffverity-source-cache';
 		if ( ! wp_mkdir_p( $cache_dir ) || false === realpath( $cache_dir ) ) {
-			return new \WP_Error( 'diffverity_bundle_cache_unavailable', __( 'A protected source-file cache could not be prepared.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_unavailable', __( 'A protected source-file cache could not be prepared.', 'diffverity' ) );
 		}
 		chmod( $cache_dir, 0700 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Restricts the private temporary cache.
 		self::cleanup_source_cache( 6 * HOUR_IN_SECONDS );
@@ -175,7 +195,7 @@ final class Bundled_Component_Source {
 
 		$staging = tempnam( $cache_dir, '.diffverity-' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_tempnam -- Same-directory staging prevents partial cache entries.
 		if ( ! $staging ) {
-			return new \WP_Error( 'diffverity_bundle_cache_stage', __( 'The official source file could not be staged.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_stage', __( 'The official source file could not be staged.', 'diffverity' ) );
 		}
 		$url      = 'https://core.svn.wordpress.org/tags/' . rawurlencode( $source_version ) . '/' . implode( '/', array_map( 'rawurlencode', explode( '/', $component_path ) ) );
 		$download = ( new WordPress_Org_Client() )->download_source_file( $url, $staging, $max_bytes );
@@ -183,12 +203,12 @@ final class Bundled_Component_Source {
 			if ( is_file( $staging ) ) {
 				wp_delete_file( $staging );
 			}
-			return is_wp_error( $download ) ? $download : new \WP_Error( 'diffverity_bundle_source_hash', __( 'The retrieved official source file did not match its recorded WordPress checksum.', 'diffverity-file-integrity-source-diff' ) );
+			return is_wp_error( $download ) ? $download : new \WP_Error( 'diffverity_bundle_source_hash', __( 'The retrieved official source file did not match its recorded WordPress checksum.', 'diffverity' ) );
 		}
 		chmod( $staging, 0600 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_chmod -- Restricts cached source bytes.
 		if ( ! rename( $staging, $cache_file ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Atomic same-directory cache replacement.
 			wp_delete_file( $staging );
-			return new \WP_Error( 'diffverity_bundle_cache_commit', __( 'The verified official source file could not be cached.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_bundle_cache_commit', __( 'The verified official source file could not be cached.', 'diffverity' ) );
 		}
 		return $cache_file;
 	}

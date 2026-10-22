@@ -58,7 +58,7 @@ final class Scan_Manager {
 	public function start( $component_type = '', $component_slug = '' ) {
 		$lock = get_transient( 'diffverity_scan_lock' );
 		if ( is_array( $lock ) && ! empty( $lock['scan_id'] ) ) {
-			return new \WP_Error( 'diffverity_scan_locked', __( 'Another integrity scan is already running.', 'diffverity-file-integrity-source-diff' ), $lock );
+			return new \WP_Error( 'diffverity_scan_locked', __( 'Another integrity scan is already running.', 'diffverity' ), $lock );
 		}
 		$settings       = Plugin::settings();
 		$all_components = array_values(
@@ -72,21 +72,21 @@ final class Scan_Manager {
 		$components     = $all_components;
 		if ( '' !== $component_type || '' !== $component_slug ) {
 			if ( ! in_array( $component_type, array( 'core', 'plugin', 'theme' ), true ) || '' === $component_slug ) {
-				return new \WP_Error( 'diffverity_scan_component_invalid', __( 'The selected scan component is invalid.', 'diffverity-file-integrity-source-diff' ) );
+				return new \WP_Error( 'diffverity_scan_component_invalid', __( 'The selected scan component is invalid.', 'diffverity' ) );
 			}
 			$selected = ( new Component_Registry() )->resolve( $component_type, $component_slug );
 			if ( false === $selected ) {
-				return new \WP_Error( 'diffverity_scan_component_missing', __( 'The selected component is no longer installed or cannot be resolved safely.', 'diffverity-file-integrity-source-diff' ) );
+				return new \WP_Error( 'diffverity_scan_component_missing', __( 'The selected component is no longer installed or cannot be resolved safely.', 'diffverity' ) );
 			}
 			$key = $selected['type'] . ':' . $selected['slug'];
 			if ( in_array( $key, (array) $settings['excluded_components'], true ) ) {
-				return new \WP_Error( 'diffverity_scan_component_excluded', __( 'The selected component is excluded in DiffVerity settings.', 'diffverity-file-integrity-source-diff' ) );
+				return new \WP_Error( 'diffverity_scan_component_excluded', __( 'The selected component is excluded in DiffVerity settings.', 'diffverity' ) );
 			}
 			$components = array( $selected );
 		}
 		$scan_id = $this->history->create( count( $components ) );
 		if ( ! $scan_id ) {
-			return new \WP_Error( 'diffverity_scan_create_failed', __( 'The scan record could not be created.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_scan_create_failed', __( 'The scan record could not be created.', 'diffverity' ) );
 		}
 		$state = array(
 			'scan_id'   => $scan_id,
@@ -125,7 +125,11 @@ final class Scan_Manager {
 	public function step( $scan_id ) {
 		$state = $this->load_state( $scan_id );
 		if ( false === $state ) {
-			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity-file-integrity-source-diff' ) );
+			$lock = get_transient( 'diffverity_scan_lock' );
+			if ( is_array( $lock ) && isset( $lock['scan_id'] ) && (int) $lock['scan_id'] === (int) $scan_id ) {
+				delete_transient( 'diffverity_scan_lock' );
+			}
+			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity' ) );
 		}
 		if ( ! empty( $state['cancelled'] ) ) {
 			return $this->cancel( $scan_id );
@@ -193,7 +197,7 @@ final class Scan_Manager {
 			$rows[] = $this->result_row( $scan_id, $current['component'], $path, $local, $trusted, $current['trust'], $status );
 		}
 		if ( ! $this->results->insert_batch( $rows ) ) {
-			return new \WP_Error( 'diffverity_result_write_failed', __( 'The scan batch results could not be stored.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_result_write_failed', __( 'The scan batch results could not be stored.', 'diffverity' ) );
 		}
 
 		$current['cursor'] += count( $paths );
@@ -219,7 +223,7 @@ final class Scan_Manager {
 	public function cancel( $scan_id ) {
 		$state = $this->load_state( $scan_id );
 		if ( false === $state ) {
-			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_scan_state_missing', __( 'The scan state is missing or expired.', 'diffverity' ) );
 		}
 		if ( is_array( $state['current'] ) ) {
 			$this->cleanup_current( $state['current'] );
@@ -243,7 +247,7 @@ final class Scan_Manager {
 	private function prepare_component( array $identifier, $scan_id ) {
 		$component = ( new Component_Registry() )->resolve( $identifier['type'], $identifier['slug'] );
 		if ( false === $component ) {
-			$this->results->insert_batch( array( $this->source_failure_row( $scan_id, $identifier, 'Not Verifiable', __( 'The component could not be resolved inside an approved WordPress directory.', 'diffverity-file-integrity-source-diff' ) ) ) );
+			$this->results->insert_batch( array( $this->source_failure_row( $scan_id, $identifier, 'Not Verifiable', __( 'The component could not be resolved inside an approved WordPress directory.', 'diffverity' ) ) ) );
 			return array( 'terminal' => true );
 		}
 		$source   = $this->source_for( $component );
@@ -263,6 +267,10 @@ final class Scan_Manager {
 				$this->results->insert_batch( array( $this->source_failure_row( $scan_id, $component, $trust, $manifest->get_error_message() ) ) );
 				return array( 'terminal' => true );
 			}
+		}
+		if ( 'plugin' === $component['type'] && ! empty( $component['entry'] ) ) {
+			$entry             = $component['main_file'];
+			$manifest['files'] = isset( $manifest['files'][ $entry ] ) ? array( $entry => $manifest['files'][ $entry ] ) : array();
 		}
 
 		$settings = Plugin::settings();

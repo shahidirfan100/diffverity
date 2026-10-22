@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="250" viewBox="0 0 772 250" role="img" aria-labelledby="title description">
+  <title id="title">DiffVerity file integrity and source diff</title>
+  <desc id="description">Compare installed files with trusted sources. Inspect exact changes, hashes, and source status.</desc>
+  <rect width="772" height="250" fill="#f4f1e8"/>
+  <path d="M40 50h4v52h-4z" fill="#8a4b2f"/>
+  <g transform="translate(48 55)">
+    <rect x="0" y="0" width="50" height="50" rx="4" fill="#f4f1e8" stroke="#1d2327" stroke-width="2"/>
+    <path d="M8 9h12l4 4v28H8zM28 9h14v32H28z" fill="#fff" stroke="#1d2327" stroke-width="1.5"/>
+    <path d="M11 18h9M11 24h9M11 30h9M11 36h9M31 18h8M31 24h8M31 36h8" fill="none" stroke="#50575e" stroke-width="1.5" stroke-linecap="square"/>
+    <path d="M31 30h5" fill="none" stroke="#8a4b2f" stroke-width="2.5" stroke-linecap="square"/>
+  </g>
+  <text x="112" y="82" fill="#1d2327" font-family="Arial, Helvetica, sans-serif" font-size="35" font-weight="700">DiffVerity</text>
+  <text x="113" y="104" fill="#50575e" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400">File integrity and source diff</text>
+  <text x="48" y="143" fill="#1d2327" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600">Compare installed files</text>
+  <text x="48" y="164" fill="#1d2327" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="600">with trusted sources.</text>
+  <text x="48" y="191" fill="#50575e" font-family="Arial, Helvetica, sans-serif" font-size="13">Inspect exact changes, hashes, and source status.</text>
+  <text x="48" y="222" fill="#50575e" font-family="Arial, Helvetica, sans-serif" font-size="11">A difference alone does not establish compromise.</text>
+
+  <rect x="390.5" y="37.5" width="337" height="177" fill="#fff" stroke="#c3c4c7"/>
+  <text x="411" y="64" fill="#1d2327" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700">Source</text>
+  <text x="589" y="64" fill="#1d2327" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700">Installed</text>
+  <path d="M411 76h295M568 48v151M411 91h295M411 119h295M411 147h295M411 175h295" fill="none" stroke="#e2e4e7" stroke-width="1"/>
+  <path d="M429 104h83M589 104h88M429 132h101" fill="none" stroke="#50575e" stroke-width="5" stroke-linecap="square"/>
+  <rect x="402" y="151" width="312" height="23" fill="#f7eee8"/>
+  <path d="M402 151h3v23h-3zM429 162h83" fill="none" stroke="#8a4b2f" stroke-width="3" stroke-linecap="square"/>
+  <path d="M589 162h54" fill="none" stroke="#8a4b2f" stroke-width="5" stroke-linecap="square"/>
+  <text x="661" y="166" fill="#8a4b2f" font-family="Arial, Helvetica, sans-serif" font-size="10" font-weight="700">DIFF</text>
+  <path d="M429 188h111M589 188h88" fill="none" stroke="#50575e" stroke-width="5" stroke-linecap="square"/>
+</svg>

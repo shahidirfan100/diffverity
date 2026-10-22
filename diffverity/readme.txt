@@ -4,7 +4,7 @@ Tags: file integrity, checksum, source diff, modified files, plugin integrity
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,13 +65,19 @@ WordPress.org privacy policy: https://wordpress.org/about/privacy/
 
 == Installation ==
 
-1. Upload the `diffverity-file-integrity-source-diff` folder to `/wp-content/plugins/`, or install the ZIP through Plugins > Add New > Upload Plugin.
+1. Upload the `diffverity` folder to `/wp-content/plugins/`, or install the ZIP through Plugins > Add New > Upload Plugin.
 2. Activate DiffVerity.
 3. Open DiffVerity > Scan.
 4. Choose all components or one specific core, plugin, or theme target, then select **Run Integrity Scan**.
 5. Review differences under DiffVerity > Changes.
 
 Activation does not scan, download a package, create a baseline, schedule a task, or contact an external service.
+
+== Screenshots ==
+
+1. File-level comparison results show each status, trust source, and last-checked time.
+2. The integrity overview summarizes the latest scan and explains the evidence labels.
+3. Settings show resource limits and controlled exclusion options.
 
 == Frequently Asked Questions ==
 
@@ -132,6 +138,17 @@ Local Baselines retain hashes and metadata rather than full source copies, so or
 DiffVerity does not repair or delete files. It deliberately keeps investigation separate from remediation because changed files may be legitimate local additions or customizations.
 
 == Changelog ==
+
+= 1.2.2 =
+
+* Replaced the directory icon and banners with an original, flat file-comparison mark.
+* Simplified the admin screens to follow WordPress controls and improve narrow-screen reading.
+* Added keyboard focus management and progress announcements to the evidence dialog and scan controls.
+* Resumes an active scan when its administrator returns to the Scan screen.
+* Rejects plugin checksum manifests with a different identity or without the selected entry file.
+* Limits root-level single-file plugin scans and bundled-core evidence to the selected entry file.
+* Aligns translation calls with the existing `diffverity` plugin slug.
+* Added screenshots of the real Changes, Overview, and Settings screens.
 
 = 1.2.1 =
 
@@ -194,6 +211,6 @@ DiffVerity does not repair or delete files. It deliberately keeps investigation 
 
 == Upgrade Notice ==
 
-= 1.2.1 =
+= 1.2.2 =
 
-This is the initial stable release of DiffVerity, with bounded large-scan history and export handling, paginated file results, stable result ordering, and protected CSV fields.
+Reworked the admin presentation, accessibility, and directory media while preserving the 1.2.1 feature set.

@@ -27,8 +27,15 @@ final class Plugin_Source extends Package_Source {
 		if ( is_wp_error( $data ) ) {
 			return $data;
 		}
+		if ( empty( $data['plugin'] ) || ! is_string( $data['plugin'] ) || $component['slug'] !== $data['plugin'] || empty( $data['version'] ) || ! is_string( $data['version'] ) || $component['version'] !== $data['version'] ) {
+			return new \WP_Error( 'diffverity_plugin_checksum_identity_mismatch', __( 'The checksum response does not match the selected plugin and exact version.', 'diffverity' ) );
+		}
 		if ( empty( $data['files'] ) || ! is_array( $data['files'] ) ) {
-			return new \WP_Error( 'diffverity_plugin_checksums_malformed', __( 'The plugin checksum response does not contain a file manifest.', 'diffverity-file-integrity-source-diff' ) );
+			return new \WP_Error( 'diffverity_plugin_checksums_malformed', __( 'The plugin checksum response does not contain a file manifest.', 'diffverity' ) );
+		}
+		$main_file = isset( $component['main_file'] ) && is_string( $component['main_file'] ) ? str_replace( '\\', '/', ltrim( $component['main_file'], '/' ) ) : '';
+		if ( '' === $main_file || ! isset( $data['files'][ $main_file ] ) || ! is_array( $data['files'][ $main_file ] ) ) {
+			return new \WP_Error( 'diffverity_plugin_checksum_entry_missing', __( 'The checksum response does not include the selected plugin entry file.', 'diffverity' ) );
 		}
 		$files     = array();
 		$algorithm = 'md5';
